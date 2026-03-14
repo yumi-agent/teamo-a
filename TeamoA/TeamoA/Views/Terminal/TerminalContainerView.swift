@@ -49,6 +49,9 @@ class TerminalController: ObservableObject {
     var store: ProjectStore?
     var terminalView: TerminalView?
 
+    private var engineLaunchedAt: Date?
+    private var initialGoalSent = false
+
     init() {
         ptyManager.delegate = self
         stateDetector.delegate = self
@@ -74,6 +77,12 @@ class TerminalController: ObservableObject {
                 guard let self = self, let agent = self.agent else { return }
                 let cmd = agent.engine.launchCommand
                 self.ptyManager.write(cmd + "\n")
+                self.engineLaunchedAt = Date()
+
+                // Auto-accept workspace trust check after 3 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                    self?.ptyManager.write("\r")
+                }
             }
         } catch {
             print("Failed to start session: \(error)")
@@ -89,7 +98,15 @@ class TerminalController: ObservableObject {
     }
 
     func sendInput(_ text: String) {
-        ptyManager.write(text + "\n")
+        ptyManager.write(text + "\r")
+    }
+
+    func trySendInitialGoal() {
+        guard !initialGoalSent else { return }
+        guard let agent = agent, let goal = agent.goalDescription, !goal.isEmpty else { return }
+        guard let launched = engineLaunchedAt, Date().timeIntervalSince(launched) > 4.0 else { return }
+        initialGoalSent = true
+        ptyManager.write(goal + "\r")
     }
 }
 
@@ -137,6 +154,11 @@ extension TerminalController: AgentStateDetectorDelegate {
         agent.state = newState
         agent.lastActivityAt = Date()
         store?.objectWillChange.send()
+
+        // Auto-send initial goal when agent enters waiting state
+        if newState == .paused {
+            trySendInitialGoal()
+        }
 
         // Notify on meaningful transitions
         if previousState == .running && (newState == .paused || newState == .stopped) {
