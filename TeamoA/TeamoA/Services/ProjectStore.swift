@@ -89,18 +89,20 @@ class ProjectStore: ObservableObject {
     func createAgent(name: String, role: String, engine: AgentEngine, goalDescription: String?) {
         guard let wid = currentWorkspaceId else { return }
 
+        let goalDesc = goalDescription?.trimmingCharacters(in: .whitespaces)
         let agent = Agent(
             projectId: wid,
             name: name,
             role: role,
             engine: engine,
-            iconName: iconForRole(role)
+            iconName: iconForRole(role),
+            goalDescription: (goalDesc?.isEmpty == false) ? goalDesc : nil
         )
         agents.append(agent)
         addActivity(agentName: name, action: "joined the workspace")
 
         // Create a linked goal if provided
-        if let desc = goalDescription, !desc.isEmpty {
+        if let desc = goalDesc, !desc.isEmpty {
             let goal = Goal(
                 projectId: wid,
                 title: desc,
@@ -109,6 +111,13 @@ class ProjectStore: ObservableObject {
             goals.append(goal)
             addActivity(action: "created goal", detail: desc)
         }
+
+        // Navigate to agent terminal
+        NotificationCenter.default.post(
+            name: .navigateToAgent,
+            object: nil,
+            userInfo: ["agentId": agent.id]
+        )
     }
 
     private func iconForRole(_ role: String) -> String {

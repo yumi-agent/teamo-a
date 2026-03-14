@@ -11,9 +11,10 @@ class Agent: ObservableObject, Identifiable, Codable {
     @Published var state: AgentState
     let createdAt: Date
     @Published var lastActivityAt: Date
+    var goalDescription: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, projectId, name, role, engine, iconName, state, createdAt, lastActivityAt
+        case id, projectId, name, role, engine, iconName, state, createdAt, lastActivityAt, goalDescription
     }
 
     init(
@@ -24,7 +25,8 @@ class Agent: ObservableObject, Identifiable, Codable {
         engine: AgentEngine = .claudeCode,
         iconName: String = "person.crop.circle",
         state: AgentState = .idle,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        goalDescription: String? = nil
     ) {
         self.id = id
         self.projectId = projectId
@@ -35,6 +37,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         self.state = state
         self.createdAt = createdAt
         self.lastActivityAt = createdAt
+        self.goalDescription = goalDescription
     }
 
     required init(from decoder: Decoder) throws {
@@ -48,6 +51,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         state = try c.decode(AgentState.self, forKey: .state)
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         lastActivityAt = try c.decode(Date.self, forKey: .lastActivityAt)
+        goalDescription = try c.decodeIfPresent(String.self, forKey: .goalDescription)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -61,6 +65,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         try c.encode(state, forKey: .state)
         try c.encode(createdAt, forKey: .createdAt)
         try c.encode(lastActivityAt, forKey: .lastActivityAt)
+        try c.encodeIfPresent(goalDescription, forKey: .goalDescription)
     }
 }
 

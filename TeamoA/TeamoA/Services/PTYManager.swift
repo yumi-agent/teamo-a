@@ -64,6 +64,9 @@ class PTYManager {
         var env = ProcessInfo.processInfo.environment
         env["TERM"] = "xterm-256color"
         env["COLORTERM"] = "truecolor"
+        // Remove nesting detection markers so claude/codex can start fresh
+        env.removeValue(forKey: "CLAUDECODE")
+        env.removeValue(forKey: "CLAUDE_CODE_ENTRYPOINT")
         if let extra = environment {
             env.merge(extra) { _, new in new }
         }
