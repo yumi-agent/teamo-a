@@ -27,6 +27,13 @@ enum AgentEngine: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    var launchCommand: String {
+        switch self {
+        case .claudeCode: return "command claude --dangerously-skip-permissions"
+        case .codex: return "command codex --dangerously-bypass-approvals-and-sandbox"
+        }
+    }
+
     var iconName: String {
         switch self {
         case .claudeCode: return "brain.head.profile"

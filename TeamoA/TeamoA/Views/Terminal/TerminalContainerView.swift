@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftTerm
 
 struct TerminalContainerView: View {
     @ObservedObject var agent: Agent
@@ -13,8 +14,13 @@ struct TerminalContainerView: View {
             SwiftTermView(
                 ptyManager: controller.ptyManager,
                 backgroundColor: NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0),
-                onResize: { cols, rows in
-                    controller.ptyManager.resize(cols: cols, rows: rows)
+                onTerminalReady: { tv in
+                    controller.terminalView = tv
+                    // Start session after terminal view is ready
+                    // (onAppear already ran by this point since onTerminalReady dispatches async)
+                    if !controller.ptyManager.isRunning {
+                        controller.startSession()
+                    }
                 }
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -30,9 +36,6 @@ struct TerminalContainerView: View {
             controller.agent = agent
             controller.notificationService = notificationService
             controller.store = store
-            if agent.state != .running || !controller.ptyManager.isRunning {
-                controller.startSession()
-            }
         }
     }
 }
@@ -44,8 +47,7 @@ class TerminalController: ObservableObject {
     var agent: Agent?
     var notificationService: NotificationService?
     var store: ProjectStore?
-
-    private var swiftTermCoordinator: SwiftTermView.Coordinator?
+    var terminalView: TerminalView?
 
     init() {
         ptyManager.delegate = self
@@ -54,20 +56,25 @@ class TerminalController: ObservableObject {
 
     func startSession() {
         guard let agent = agent else { return }
-
-        let command = agent.engine.command
-        let args = agent.engine.defaultArgs
-        let workDir = store?.currentProject?.workingDirectory ?? NSHomeDirectory()
+        let workDir = store?.currentWorkspace?.workingDirectory ?? NSHomeDirectory()
 
         do {
+            // Start a login shell — ensures PATH includes nvm, pyenv, etc.
             try ptyManager.start(
-                command: command,
-                arguments: args,
+                command: "/bin/zsh",
+                arguments: ["--login"],
                 workingDirectory: workDir
             )
             agent.state = .running
             stateDetector.start()
             store?.objectWillChange.send()
+
+            // After shell initializes, send the agent engine command
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                guard let self = self, let agent = self.agent else { return }
+                let cmd = agent.engine.launchCommand
+                self.ptyManager.write(cmd + "\n")
+            }
         } catch {
             print("Failed to start session: \(error)")
             agent.state = .error
@@ -84,15 +91,13 @@ class TerminalController: ObservableObject {
     func sendInput(_ text: String) {
         ptyManager.write(text + "\n")
     }
-
-    func setSwiftTermCoordinator(_ coordinator: SwiftTermView.Coordinator) {
-        self.swiftTermCoordinator = coordinator
-    }
 }
 
 extension TerminalController: PTYManagerDelegate {
     func ptyManager(_ manager: PTYManager, didReceiveOutput data: Data) {
-        swiftTermCoordinator?.feedToTerminal(data)
+        // Feed output directly to TerminalView
+        let bytes = Array(data)
+        terminalView?.feed(byteArray: ArraySlice(bytes))
 
         if let text = String(data: data, encoding: .utf8) {
             stateDetector.feedOutput(text)

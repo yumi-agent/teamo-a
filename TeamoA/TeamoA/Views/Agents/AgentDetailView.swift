@@ -4,7 +4,7 @@ struct AgentDetailView: View {
     @ObservedObject var agent: Agent
     @EnvironmentObject var store: ProjectStore
     @EnvironmentObject var notificationService: NotificationService
-    @State private var showTerminal = false
+    @State private var showTerminal = true
     @State private var showAssignIssue = false
 
     var body: some View {

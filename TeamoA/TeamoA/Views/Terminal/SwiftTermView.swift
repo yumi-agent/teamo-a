@@ -4,7 +4,7 @@ import SwiftTerm
 struct SwiftTermView: NSViewRepresentable {
     let ptyManager: PTYManager
     let backgroundColor: NSColor
-    var onResize: ((Int, Int) -> Void)?
+    var onTerminalReady: ((TerminalView) -> Void)?
 
     func makeNSView(context: Context) -> TerminalView {
         let tv = TerminalView(frame: .zero)
@@ -12,12 +12,15 @@ struct SwiftTermView: NSViewRepresentable {
         tv.nativeBackgroundColor = backgroundColor
         tv.nativeForegroundColor = .white
 
-        // Configure terminal appearance
         let font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
         tv.font = font
 
-        context.coordinator.terminalView = tv
         context.coordinator.ptyManager = ptyManager
+
+        // Notify controller that terminal view is ready
+        DispatchQueue.main.async {
+            onTerminalReady?(tv)
+        }
 
         return tv
     }
@@ -27,47 +30,25 @@ struct SwiftTermView: NSViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onResize: onResize)
+        Coordinator()
     }
 
     class Coordinator: NSObject, TerminalViewDelegate {
-        var terminalView: TerminalView?
         var ptyManager: PTYManager?
-        var onResize: ((Int, Int) -> Void)?
-
-        init(onResize: ((Int, Int) -> Void)?) {
-            self.onResize = onResize
-        }
-
-        // Feed data from PTY to terminal
-        func feedToTerminal(_ data: Data) {
-            let bytes = ArraySlice([UInt8](data))
-            terminalView?.feed(byteArray: bytes)
-        }
-
-        // MARK: - TerminalViewDelegate
 
         func send(source: TerminalView, data: ArraySlice<UInt8>) {
-            let d = Data(data)
-            ptyManager?.write(d)
+            ptyManager?.write(Data(data))
         }
 
-        func scrolled(source: TerminalView, position: Double) {
-            // No-op
-        }
+        func scrolled(source: TerminalView, position: Double) {}
 
-        func setTerminalTitle(source: TerminalView, title: String) {
-            // Could update window title
-        }
+        func setTerminalTitle(source: TerminalView, title: String) {}
 
         func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
             ptyManager?.resize(cols: newCols, rows: newRows)
-            onResize?(newCols, newRows)
         }
 
-        func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
-            // Could update session cwd
-        }
+        func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
 
         func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
             if let url = URL(string: link) {
@@ -75,9 +56,7 @@ struct SwiftTermView: NSViewRepresentable {
             }
         }
 
-        func rangeChanged(source: TerminalView, startY: Int, endY: Int) {
-            // No-op
-        }
+        func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
 
         func clipboardCopy(source: TerminalView, content: Data) {
             if let str = String(data: content, encoding: .utf8) {
@@ -90,8 +69,6 @@ struct SwiftTermView: NSViewRepresentable {
             NSSound.beep()
         }
 
-        func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {
-            // No-op
-        }
+        func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {}
     }
 }

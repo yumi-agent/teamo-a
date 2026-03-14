@@ -31,8 +31,8 @@ struct CreateGoalView: View {
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Create") {
-                    guard let pid = store.currentProjectId else { return }
-                    let goal = Goal(projectId: pid, title: title, description: description)
+                    guard let wid = store.currentWorkspaceId else { return }
+                    let goal = Goal(projectId: wid, title: title, description: description)
                     store.addGoal(goal)
                     dismiss()
                 }
