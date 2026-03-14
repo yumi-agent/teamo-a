@@ -15,8 +15,9 @@ struct AgentDetailView: View {
             Divider()
 
             if showTerminal {
-                // Terminal view
+                // Terminal view — .id forces fresh PTY per agent
                 TerminalContainerView(agent: agent)
+                    .id(agent.id)
             } else {
                 // Info view
                 agentInfoView

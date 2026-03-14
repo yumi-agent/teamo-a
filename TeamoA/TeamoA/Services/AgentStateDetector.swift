@@ -53,7 +53,9 @@ class AgentStateDetector {
     func feedOutput(_ text: String) {
         lastOutputTime = Date()
 
-        let lines = text.components(separatedBy: "\n")
+        // Strip ANSI escape sequences before pattern matching
+        let stripped = stripAnsiEscapes(text)
+        let lines = stripped.components(separatedBy: "\n")
         let recentText = lines.suffix(3).joined(separator: "\n")
 
         for pattern in waitingPatterns {
@@ -66,6 +68,16 @@ class AgentStateDetector {
 
         updateState(.running)
         restartIdleTimer()
+    }
+
+    private func stripAnsiEscapes(_ text: String) -> String {
+        // Remove ANSI escape sequences: CSI (ESC[), OSC (ESC]), etc.
+        let esc = "\u{1b}"
+        let bel = "\u{07}"
+        let pattern = "\(esc)\\[[0-9;]*[a-zA-Z]|\(esc)\\][^\(bel)]*\(bel)|\(esc)\\([A-Z]|\(esc)[=>]"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return text }
+        let range = NSRange(text.startIndex..., in: text)
+        return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
     }
 
     private func updateState(_ newState: SessionState) {

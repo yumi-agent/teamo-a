@@ -26,7 +26,6 @@ struct InputAreaView: View {
             }
             .buttonStyle(.plain)
             .disabled(inputText.isEmpty)
-            .keyboardShortcut(.return, modifiers: [])
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
