@@ -1,5 +1,13 @@
 import Foundation
 
+// Detection-layer state enum (internal to the detector subsystem)
+enum SessionState: String {
+    case running
+    case idle
+    case waiting
+    case stopped
+}
+
 protocol AgentStateDetectorDelegate: AnyObject {
     func stateDetector(_ detector: AgentStateDetector, didDetectState state: SessionState)
 }
@@ -12,13 +20,12 @@ class AgentStateDetector {
     private var currentState: SessionState = .stopped
     private let idleThreshold: TimeInterval = 3.0
 
-    // Patterns that indicate the agent is waiting for input
     private let waitingPatterns: [NSRegularExpression] = {
         let patterns = [
-            "❯\\s*$",                    // Claude Code prompt
-            ">\\s*$",                     // Generic prompt
-            "\\$\\s*$",                   // Shell prompt
-            "waiting for input",          // Explicit waiting
+            "❯\\s*$",
+            ">\\s*$",
+            "\\$\\s*$",
+            "waiting for input",
             "Enter your (message|response|input)",
             "What would you like",
             "How can I help",
@@ -46,7 +53,6 @@ class AgentStateDetector {
     func feedOutput(_ text: String) {
         lastOutputTime = Date()
 
-        // Check for waiting patterns in the last few lines
         let lines = text.components(separatedBy: "\n")
         let recentText = lines.suffix(3).joined(separator: "\n")
 
@@ -58,16 +64,9 @@ class AgentStateDetector {
             }
         }
 
-        // Active output means running
         updateState(.running)
         restartIdleTimer()
     }
-
-    func manualOverride(state: SessionState) {
-        updateState(state)
-    }
-
-    // MARK: - Private
 
     private func updateState(_ newState: SessionState) {
         guard newState != currentState else { return }
@@ -88,8 +87,7 @@ class AgentStateDetector {
 
     private func checkIdle() {
         guard currentState == .running else { return }
-        let elapsed = Date().timeIntervalSince(lastOutputTime)
-        if elapsed > idleThreshold {
+        if Date().timeIntervalSince(lastOutputTime) > idleThreshold {
             updateState(.idle)
         }
     }

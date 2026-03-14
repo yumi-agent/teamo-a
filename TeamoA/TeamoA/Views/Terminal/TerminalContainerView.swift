@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct TerminalContainerView: View {
-    @ObservedObject var session: AgentSession
-    @EnvironmentObject var sessionStore: SessionStore
+    @ObservedObject var agent: Agent
+    @EnvironmentObject var store: ProjectStore
     @EnvironmentObject var notificationService: NotificationService
 
     @StateObject private var controller = TerminalController()
@@ -12,7 +12,7 @@ struct TerminalContainerView: View {
             // Terminal
             SwiftTermView(
                 ptyManager: controller.ptyManager,
-                backgroundColor: session.backgroundColor.terminalBackground,
+                backgroundColor: NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0),
                 onResize: { cols, rows in
                     controller.ptyManager.resize(cols: cols, rows: rows)
                 }
@@ -24,26 +24,15 @@ struct TerminalContainerView: View {
             // Input area
             InputAreaView { text in
                 controller.sendInput(text)
-                sessionStore.appendTranscript(
-                    sessionId: session.id,
-                    entry: TranscriptEntry(
-                        timestamp: Date(),
-                        type: .input,
-                        content: text
-                    )
-                )
             }
         }
         .onAppear {
-            controller.session = session
+            controller.agent = agent
             controller.notificationService = notificationService
-            controller.sessionStore = sessionStore
-            if session.state == .stopped {
+            controller.store = store
+            if agent.state != .running || !controller.ptyManager.isRunning {
                 controller.startSession()
             }
-        }
-        .onDisappear {
-            // Don't terminate - session continues in background
         }
     }
 }
@@ -52,9 +41,9 @@ class TerminalController: ObservableObject {
     let ptyManager = PTYManager()
     let stateDetector = AgentStateDetector()
 
-    var session: AgentSession?
+    var agent: Agent?
     var notificationService: NotificationService?
-    var sessionStore: SessionStore?
+    var store: ProjectStore?
 
     private var swiftTermCoordinator: SwiftTermView.Coordinator?
 
@@ -64,41 +53,32 @@ class TerminalController: ObservableObject {
     }
 
     func startSession() {
-        guard let session = session else { return }
+        guard let agent = agent else { return }
 
-        let command: String
-        let args: [String]
-
-        if session.engine == .claudeCode {
-            command = "claude"
-            args = session.engine.defaultArgs
-        } else {
-            command = session.engine.command
-            args = session.engine.defaultArgs
-        }
+        let command = agent.engine.command
+        let args = agent.engine.defaultArgs
+        let workDir = store?.currentProject?.workingDirectory ?? NSHomeDirectory()
 
         do {
             try ptyManager.start(
                 command: command,
                 arguments: args,
-                workingDirectory: session.workingDirectory
+                workingDirectory: workDir
             )
-            session.state = .running
+            agent.state = .running
             stateDetector.start()
-            sessionStore?.updateSession(session)
+            store?.objectWillChange.send()
         } catch {
             print("Failed to start session: \(error)")
-            session.state = .stopped
+            agent.state = .error
         }
     }
 
     func stopSession() {
         ptyManager.terminate()
         stateDetector.stop()
-        session?.state = .stopped
-        if let session = session {
-            sessionStore?.updateSession(session)
-        }
+        agent?.state = .stopped
+        store?.objectWillChange.send()
     }
 
     func sendInput(_ text: String) {
@@ -112,36 +92,24 @@ class TerminalController: ObservableObject {
 
 extension TerminalController: PTYManagerDelegate {
     func ptyManager(_ manager: PTYManager, didReceiveOutput data: Data) {
-        // Feed to terminal view
         swiftTermCoordinator?.feedToTerminal(data)
 
-        // Feed to state detector
         if let text = String(data: data, encoding: .utf8) {
             stateDetector.feedOutput(text)
-
-            // Log to transcript
-            if let session = session {
-                sessionStore?.appendTranscript(
-                    sessionId: session.id,
-                    entry: TranscriptEntry(
-                        timestamp: Date(),
-                        type: .output,
-                        content: text
-                    )
-                )
-            }
         }
     }
 
     func ptyManager(_ manager: PTYManager, didTerminateWithStatus status: Int32) {
         stateDetector.processTerminated()
-        session?.state = .stopped
-        if let session = session {
-            sessionStore?.updateSession(session)
-            notificationService?.sendStateChangeNotification(
-                sessionId: session.id,
-                sessionName: session.name,
-                newState: .stopped
+        agent?.state = .stopped
+        store?.objectWillChange.send()
+
+        if let agent = agent {
+            notificationService?.sendNotification(
+                sessionId: agent.id,
+                sessionName: agent.name,
+                title: "[\(agent.name)] Completed",
+                body: "Agent session has finished"
             )
         }
     }
@@ -149,21 +117,32 @@ extension TerminalController: PTYManagerDelegate {
 
 extension TerminalController: AgentStateDetectorDelegate {
     func stateDetector(_ detector: AgentStateDetector, didDetectState state: SessionState) {
-        let previousState = session?.state
-        session?.state = state
-        session?.lastActivityAt = Date()
+        guard let agent = agent else { return }
+        let previousState = agent.state
 
-        if let session = session {
-            sessionStore?.updateSession(session)
+        // Map SessionState to AgentState
+        let newState: AgentState
+        switch state {
+        case .running: newState = .running
+        case .idle: newState = .idle
+        case .waiting: newState = .paused
+        case .stopped: newState = .stopped
+        }
 
-            // Only notify for meaningful transitions
-            if previousState == .running && (state == .waiting || state == .stopped) {
-                notificationService?.sendStateChangeNotification(
-                    sessionId: session.id,
-                    sessionName: session.name,
-                    newState: state
-                )
-            }
+        agent.state = newState
+        agent.lastActivityAt = Date()
+        store?.objectWillChange.send()
+
+        // Notify on meaningful transitions
+        if previousState == .running && (newState == .paused || newState == .stopped) {
+            let title = newState == .paused ? "[\(agent.name)] Waiting for Input" : "[\(agent.name)] Completed"
+            let body = newState == .paused ? "Agent is waiting for your response" : "Agent session has finished"
+            notificationService?.sendNotification(
+                sessionId: agent.id,
+                sessionName: agent.name,
+                title: title,
+                body: body
+            )
         }
     }
 }

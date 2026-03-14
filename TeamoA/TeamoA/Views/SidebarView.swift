@@ -1,94 +1,154 @@
 import SwiftUI
 
 struct SidebarView: View {
-    @EnvironmentObject var sessionStore: SessionStore
-    @Binding var selectedSessionId: UUID?
-    @Binding var showCreateSheet: Bool
+    @EnvironmentObject var store: ProjectStore
+    @Binding var selectedItem: NavigationItem?
+    @State private var showCreateIssue = false
 
     var body: some View {
-        List(selection: $selectedSessionId) {
-            // Dashboard link
-            NavigationLink(value: nil as UUID?) {
-                Label("Dashboard", systemImage: "square.grid.2x2")
-            }
+        VStack(spacing: 0) {
+            // Project Picker
+            projectPicker
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
 
-            Section("Active") {
-                ForEach(activeSessions) { session in
-                    NavigationLink(value: session.id) {
-                        SidebarSessionRow(session: session)
-                    }
-                }
-            }
+            Divider()
 
-            if !stoppedSessions.isEmpty {
-                Section("Stopped") {
-                    ForEach(stoppedSessions) { session in
-                        NavigationLink(value: session.id) {
-                            SidebarSessionRow(session: session)
+            List(selection: $selectedItem) {
+                // Dashboard
+                NavigationLink(value: NavigationItem.dashboard) {
+                    HStack {
+                        Label("Dashboard", systemImage: "square.grid.2x2")
+                        Spacer()
+                        if store.runningAgentsCount > 0 {
+                            HStack(spacing: 4) {
+                                Circle().fill(.blue).frame(width: 6, height: 6)
+                                Text("\(store.runningAgentsCount) live")
+                                    .font(.caption2)
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
-                    .onDelete { indexSet in
-                        let toRemove = indexSet.map { stoppedSessions[$0] }
-                        toRemove.forEach { sessionStore.removeSession($0) }
+                }
+
+                Section("WORK") {
+                    NavigationLink(value: NavigationItem.issues) {
+                        Label {
+                            HStack {
+                                Text("Issues")
+                                Spacer()
+                                if store.openIssuesCount > 0 {
+                                    Text("\(store.openIssuesCount)")
+                                        .font(.caption2)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Capsule().fill(.secondary.opacity(0.2)))
+                                }
+                            }
+                        } icon: {
+                            Image(systemName: "circle.dotted")
+                        }
+                    }
+
+                    NavigationLink(value: NavigationItem.goals) {
+                        Label {
+                            HStack {
+                                Text("Goals")
+                                Spacer()
+                                Text("\(store.goalsCompletedCount)/\(store.goalsTotalCount)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "target")
+                        }
+                    }
+                }
+
+                Section("AGENTS") {
+                    ForEach(store.currentAgents) { agent in
+                        NavigationLink(value: NavigationItem.agent(agent.id)) {
+                            AgentSidebarRow(agent: agent)
+                        }
                     }
                 }
             }
+            .listStyle(.sidebar)
         }
-        .listStyle(.sidebar)
         .toolbar {
             ToolbarItem {
-                Button(action: { showCreateSheet = true }) {
+                Button(action: { showCreateIssue = true }) {
                     Image(systemName: "plus")
                 }
-                .help("New Session (Cmd+N)")
-                .keyboardShortcut("n")
+                .help("New Issue")
             }
-
-            ToolbarItem {
-                Button(action: { selectedSessionId = nil }) {
-                    Image(systemName: "square.grid.2x2")
-                }
-                .help("Dashboard")
-            }
+        }
+        .sheet(isPresented: $showCreateIssue) {
+            CreateIssueView()
         }
     }
 
-    private var activeSessions: [AgentSession] {
-        sessionStore.sessions.filter { $0.state != .stopped }
-    }
-
-    private var stoppedSessions: [AgentSession] {
-        sessionStore.sessions.filter { $0.state == .stopped }
+    private var projectPicker: some View {
+        Menu {
+            ForEach(store.projects) { project in
+                Button(action: { store.switchProject(project.id) }) {
+                    HStack {
+                        Circle().fill(project.color.color).frame(width: 8, height: 8)
+                        Text(project.name)
+                        if project.id == store.currentProjectId {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack {
+                if let project = store.currentProject {
+                    Circle().fill(project.color.color).frame(width: 10, height: 10)
+                    Text(project.name)
+                        .font(.headline)
+                } else {
+                    Text("Select Project")
+                        .font(.headline)
+                }
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
+        .menuStyle(.borderlessButton)
     }
 }
 
-struct SidebarSessionRow: View {
-    @ObservedObject var session: AgentSession
+struct AgentSidebarRow: View {
+    @ObservedObject var agent: Agent
 
     var body: some View {
         HStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(session.backgroundColor.color)
-                .frame(width: 3, height: 24)
+            Image(systemName: agent.iconName)
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+                .frame(width: 20)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.name)
-                    .font(.system(size: 13))
-                    .lineLimit(1)
-
-                HStack(spacing: 4) {
-                    EngineIcon(engine: session.engine, size: 10)
-                    Text(session.engine.displayName)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            }
+            Text(agent.name)
+                .lineLimit(1)
 
             Spacer()
 
-            Circle()
-                .fill(session.state.color)
-                .frame(width: 8, height: 8)
+            if agent.state == .running {
+                HStack(spacing: 4) {
+                    Circle().fill(.green).frame(width: 6, height: 6)
+                    Text("live")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                }
+            } else {
+                Circle()
+                    .fill(agent.state.color)
+                    .frame(width: 8, height: 8)
+            }
         }
     }
 }

@@ -13,20 +13,28 @@ sources = [
     "TeamoAApp.swift",
     "ContentView.swift",
     "Models/AgentEngine.swift",
-    "Models/SessionState.swift",
-    "Models/AgentSession.swift",
+    "Models/Project.swift",
+    "Models/Goal.swift",
+    "Models/Issue.swift",
+    "Models/Agent.swift",
+    "Models/ActivityEvent.swift",
     "Services/PTYManager.swift",
     "Services/AgentStateDetector.swift",
     "Services/NotificationService.swift",
-    "Services/SessionStore.swift",
+    "Services/ProjectStore.swift",
     "Views/SidebarView.swift",
     "Views/Dashboard/DashboardView.swift",
-    "Views/Dashboard/SessionCard.swift",
+    "Views/Dashboard/StatCard.swift",
+    "Views/Dashboard/ActivityFeedView.swift",
+    "Views/Goals/GoalsListView.swift",
+    "Views/Goals/CreateGoalView.swift",
+    "Views/Issues/IssuesListView.swift",
+    "Views/Issues/IssueDetailView.swift",
+    "Views/Issues/CreateIssueView.swift",
+    "Views/Agents/AgentDetailView.swift",
     "Views/Terminal/SwiftTermView.swift",
     "Views/Terminal/TerminalContainerView.swift",
     "Views/Terminal/InputAreaView.swift",
-    "Views/Session/CreateSessionView.swift",
-    "Views/Session/SessionDetailView.swift",
     "Views/Shared/StatusBadge.swift",
     "Views/Shared/EngineIcon.swift",
 ]
@@ -35,12 +43,10 @@ resources = [
     "Resources/Assets.xcassets",
 ]
 
-# Generate IDs
 project_id = uid("project")
 main_group_id = uid("main_group")
 sources_group_id = uid("sources_group")
 products_group_id = uid("products_group")
-frameworks_group_id = uid("frameworks_group")
 target_id = uid("target")
 product_id = uid("product_ref")
 build_config_list_project = uid("build_config_list_project")
@@ -52,486 +58,380 @@ release_config_target = uid("release_config_target")
 sources_phase_id = uid("sources_phase")
 resources_phase_id = uid("resources_phase")
 frameworks_phase_id = uid("frameworks_phase")
-package_dep_id = uid("package_dep_swiftterm")
 package_product_dep_id = uid("package_product_dep_swiftterm")
 package_ref_id = uid("package_ref_swiftterm")
 
-# Groups for organizing
 models_group = uid("group_models")
 services_group = uid("group_services")
 views_group = uid("group_views")
 dashboard_group = uid("group_dashboard")
 terminal_group = uid("group_terminal")
-session_group = uid("group_session")
+goals_group = uid("group_goals")
+issues_group = uid("group_issues")
+agents_group = uid("group_agents")
 shared_group = uid("group_shared")
 resources_group = uid("group_resources")
 
-# File references and build files
 file_refs = {}
 build_files = {}
 for src in sources:
-    fr_id = uid(f"fileref_{src}")
-    bf_id = uid(f"buildfile_{src}")
-    file_refs[src] = fr_id
-    build_files[src] = bf_id
+    file_refs[src] = uid(f"fileref_{src}")
+    build_files[src] = uid(f"buildfile_{src}")
 
 res_refs = {}
 res_build = {}
 for res in resources:
-    fr_id = uid(f"fileref_{res}")
-    bf_id = uid(f"buildfile_{res}")
-    res_refs[res] = fr_id
-    res_build[res] = bf_id
+    res_refs[res] = uid(f"fileref_{res}")
+    res_build[res] = uid(f"buildfile_{res}")
 
 info_plist_ref = uid("fileref_info_plist")
 entitlements_ref = uid("fileref_entitlements")
 
-# Build the pbxproj
 pbx = """// !$*UTF8*$!
 {
-	archiveVersion = 1;
-	classes = {
-	};
-	objectVersion = 56;
-	objects = {
+\tarchiveVersion = 1;
+\tclasses = {
+\t};
+\tobjectVersion = 56;
+\tobjects = {
 
 """
 
-# PBXBuildFile section
+# PBXBuildFile
 pbx += "/* Begin PBXBuildFile section */\n"
 for src in sources:
-    name = os.path.basename(src)
-    pbx += f'\t\t{build_files[src]} /* {name} in Sources */ = {{isa = PBXBuildFile; fileRef = {file_refs[src]} /* {name} */; }};\n'
+    n = os.path.basename(src)
+    pbx += f'\t\t{build_files[src]} /* {n} in Sources */ = {{isa = PBXBuildFile; fileRef = {file_refs[src]} /* {n} */; }};\n'
 for res in resources:
-    name = os.path.basename(res)
-    pbx += f'\t\t{res_build[res]} /* {name} in Resources */ = {{isa = PBXBuildFile; fileRef = {res_refs[res]} /* {name} */; }};\n'
-# SwiftTerm package product
+    n = os.path.basename(res)
+    pbx += f'\t\t{res_build[res]} /* {n} in Resources */ = {{isa = PBXBuildFile; fileRef = {res_refs[res]} /* {n} */; }};\n'
 pbx += f'\t\t{uid("buildfile_swiftterm")} /* SwiftTerm in Frameworks */ = {{isa = PBXBuildFile; productRef = {package_product_dep_id} /* SwiftTerm */; }};\n'
 pbx += "/* End PBXBuildFile section */\n\n"
 
-# PBXFileReference section
+# PBXFileReference
 pbx += "/* Begin PBXFileReference section */\n"
 for src in sources:
-    name = os.path.basename(src)
-    pbx += f'\t\t{file_refs[src]} /* {name} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "{name}"; sourceTree = "<group>"; }};\n'
+    n = os.path.basename(src)
+    pbx += f'\t\t{file_refs[src]} /* {n} */ = {{isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "{n}"; sourceTree = "<group>"; }};\n'
 for res in resources:
-    name = os.path.basename(res)
-    pbx += f'\t\t{res_refs[res]} /* {name} */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "{name}"; sourceTree = "<group>"; }};\n'
+    n = os.path.basename(res)
+    pbx += f'\t\t{res_refs[res]} /* {n} */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "{n}"; sourceTree = "<group>"; }};\n'
 pbx += f'\t\t{info_plist_ref} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; }};\n'
 pbx += f'\t\t{entitlements_ref} /* TeamoA.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "TeamoA.entitlements"; sourceTree = "<group>"; }};\n'
 pbx += f'\t\t{product_id} /* TeamoA.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TeamoA.app"; sourceTree = BUILT_PRODUCTS_DIR; }};\n'
 pbx += "/* End PBXFileReference section */\n\n"
 
 # PBXFrameworksBuildPhase
-pbx += "/* Begin PBXFrameworksBuildPhase section */\n"
-pbx += f"""\t\t{frameworks_phase_id} /* Frameworks */ = {{
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				{uid("buildfile_swiftterm")} /* SwiftTerm in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		}};
-"""
-pbx += "/* End PBXFrameworksBuildPhase section */\n\n"
+pbx += f"""/* Begin PBXFrameworksBuildPhase section */
+\t\t{frameworks_phase_id} /* Frameworks */ = {{
+\t\t\tisa = PBXFrameworksBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+\t\t\t\t{uid("buildfile_swiftterm")} /* SwiftTerm in Frameworks */,
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t}};
+/* End PBXFrameworksBuildPhase section */
 
-# PBXGroup section
+"""
+
+# PBXGroup
 pbx += "/* Begin PBXGroup section */\n"
 
-# Main group
 pbx += f"""\t\t{main_group_id} = {{
-			isa = PBXGroup;
-			children = (
-				{sources_group_id} /* TeamoA */,
-				{products_group_id} /* Products */,
-			);
-			sourceTree = "<group>";
-		}};
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+\t\t\t\t{sources_group_id} /* TeamoA */,
+\t\t\t\t{products_group_id} /* Products */,
+\t\t\t);
+\t\t\tsourceTree = "<group>";
+\t\t}};
 """
 
-# Products group
 pbx += f"""\t\t{products_group_id} /* Products */ = {{
-			isa = PBXGroup;
-			children = (
-				{product_id} /* TeamoA.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		}};
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+\t\t\t\t{product_id} /* TeamoA.app */,
+\t\t\t);
+\t\t\tname = Products;
+\t\t\tsourceTree = "<group>";
+\t\t}};
 """
 
-# Source group (TeamoA/)
+# Categorize files
 model_files = [f for f in sources if f.startswith("Models/")]
 service_files = [f for f in sources if f.startswith("Services/")]
 dashboard_files = [f for f in sources if f.startswith("Views/Dashboard/")]
 terminal_files = [f for f in sources if f.startswith("Views/Terminal/")]
-session_files = [f for f in sources if f.startswith("Views/Session/")]
+goals_files = [f for f in sources if f.startswith("Views/Goals/")]
+issues_files = [f for f in sources if f.startswith("Views/Issues/")]
+agents_files = [f for f in sources if f.startswith("Views/Agents/")]
 shared_files = [f for f in sources if f.startswith("Views/Shared/")]
-root_files = [f for f in sources if "/" not in f or f.startswith("Views/Sidebar")]
 
 pbx += f"""\t\t{sources_group_id} /* TeamoA */ = {{
-			isa = PBXGroup;
-			children = (
-				{file_refs["TeamoAApp.swift"]} /* TeamoAApp.swift */,
-				{file_refs["ContentView.swift"]} /* ContentView.swift */,
-				{models_group} /* Models */,
-				{services_group} /* Services */,
-				{views_group} /* Views */,
-				{resources_group} /* Resources */,
-				{info_plist_ref} /* Info.plist */,
-				{entitlements_ref} /* TeamoA.entitlements */,
-			);
-			path = TeamoA;
-			sourceTree = "<group>";
-		}};
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+\t\t\t\t{file_refs["TeamoAApp.swift"]} /* TeamoAApp.swift */,
+\t\t\t\t{file_refs["ContentView.swift"]} /* ContentView.swift */,
+\t\t\t\t{models_group} /* Models */,
+\t\t\t\t{services_group} /* Services */,
+\t\t\t\t{views_group} /* Views */,
+\t\t\t\t{resources_group} /* Resources */,
+\t\t\t\t{info_plist_ref} /* Info.plist */,
+\t\t\t\t{entitlements_ref} /* TeamoA.entitlements */,
+\t\t\t);
+\t\t\tpath = TeamoA;
+\t\t\tsourceTree = "<group>";
+\t\t}};
 """
 
-# Models group
-children = ", ".join([f"\n\t\t\t\t{file_refs[f]} /* {os.path.basename(f)} */" for f in model_files])
-pbx += f"""\t\t{models_group} /* Models */ = {{
-			isa = PBXGroup;
-			children = ({children}
-			);
-			path = Models;
-			sourceTree = "<group>";
-		}};
+def group_block(gid, name, path, files):
+    children = ",\n".join([f"\t\t\t\t{file_refs[f]} /* {os.path.basename(f)} */" for f in files])
+    return f"""\t\t{gid} /* {name} */ = {{
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+{children}
+\t\t\t);
+\t\t\tpath = {path};
+\t\t\tsourceTree = "<group>";
+\t\t}};
 """
 
-# Services group
-children = ", ".join([f"\n\t\t\t\t{file_refs[f]} /* {os.path.basename(f)} */" for f in service_files])
-pbx += f"""\t\t{services_group} /* Services */ = {{
-			isa = PBXGroup;
-			children = ({children}
-			);
-			path = Services;
-			sourceTree = "<group>";
-		}};
-"""
+pbx += group_block(models_group, "Models", "Models", model_files)
+pbx += group_block(services_group, "Services", "Services", service_files)
 
-# Views group
+# Views group (has subgroups)
 pbx += f"""\t\t{views_group} /* Views */ = {{
-			isa = PBXGroup;
-			children = (
-				{file_refs["Views/SidebarView.swift"]} /* SidebarView.swift */,
-				{dashboard_group} /* Dashboard */,
-				{terminal_group} /* Terminal */,
-				{session_group} /* Session */,
-				{shared_group} /* Shared */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		}};
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+\t\t\t\t{file_refs["Views/SidebarView.swift"]} /* SidebarView.swift */,
+\t\t\t\t{dashboard_group} /* Dashboard */,
+\t\t\t\t{goals_group} /* Goals */,
+\t\t\t\t{issues_group} /* Issues */,
+\t\t\t\t{agents_group} /* Agents */,
+\t\t\t\t{terminal_group} /* Terminal */,
+\t\t\t\t{shared_group} /* Shared */,
+\t\t\t);
+\t\t\tpath = Views;
+\t\t\tsourceTree = "<group>";
+\t\t}};
 """
 
-# Dashboard group
-children = ", ".join([f"\n\t\t\t\t{file_refs[f]} /* {os.path.basename(f)} */" for f in dashboard_files])
-pbx += f"""\t\t{dashboard_group} /* Dashboard */ = {{
-			isa = PBXGroup;
-			children = ({children}
-			);
-			path = Dashboard;
-			sourceTree = "<group>";
-		}};
-"""
+pbx += group_block(dashboard_group, "Dashboard", "Dashboard", dashboard_files)
+pbx += group_block(goals_group, "Goals", "Goals", goals_files)
+pbx += group_block(issues_group, "Issues", "Issues", issues_files)
+pbx += group_block(agents_group, "Agents", "Agents", agents_files)
+pbx += group_block(terminal_group, "Terminal", "Terminal", terminal_files)
+pbx += group_block(shared_group, "Shared", "Shared", shared_files)
 
-# Terminal group
-children = ", ".join([f"\n\t\t\t\t{file_refs[f]} /* {os.path.basename(f)} */" for f in terminal_files])
-pbx += f"""\t\t{terminal_group} /* Terminal */ = {{
-			isa = PBXGroup;
-			children = ({children}
-			);
-			path = Terminal;
-			sourceTree = "<group>";
-		}};
-"""
-
-# Session group
-children = ", ".join([f"\n\t\t\t\t{file_refs[f]} /* {os.path.basename(f)} */" for f in session_files])
-pbx += f"""\t\t{session_group} /* Session */ = {{
-			isa = PBXGroup;
-			children = ({children}
-			);
-			path = Session;
-			sourceTree = "<group>";
-		}};
-"""
-
-# Shared group
-children = ", ".join([f"\n\t\t\t\t{file_refs[f]} /* {os.path.basename(f)} */" for f in shared_files])
-pbx += f"""\t\t{shared_group} /* Shared */ = {{
-			isa = PBXGroup;
-			children = ({children}
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		}};
-"""
-
-# Resources group
-children = ", ".join([f"\n\t\t\t\t{res_refs[f]} /* {os.path.basename(f)} */" for f in resources])
+res_children = ",\n".join([f"\t\t\t\t{res_refs[f]} /* {os.path.basename(f)} */" for f in resources])
 pbx += f"""\t\t{resources_group} /* Resources */ = {{
-			isa = PBXGroup;
-			children = ({children}
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		}};
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+{res_children}
+\t\t\t);
+\t\t\tpath = Resources;
+\t\t\tsourceTree = "<group>";
+\t\t}};
 """
 
 pbx += "/* End PBXGroup section */\n\n"
 
 # PBXNativeTarget
-pbx += "/* Begin PBXNativeTarget section */\n"
-pbx += f"""\t\t{target_id} /* TeamoA */ = {{
-			isa = PBXNativeTarget;
-			buildConfigurationList = {build_config_list_target} /* Build configuration list for PBXNativeTarget "TeamoA" */;
-			buildPhases = (
-				{sources_phase_id} /* Sources */,
-				{frameworks_phase_id} /* Frameworks */,
-				{resources_phase_id} /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = TeamoA;
-			packageProductDependencies = (
-				{package_product_dep_id} /* SwiftTerm */,
-			);
-			productName = TeamoA;
-			productReference = {product_id} /* TeamoA.app */;
-			productType = "com.apple.product-type.application";
-		}};
+pbx += f"""/* Begin PBXNativeTarget section */
+\t\t{target_id} /* TeamoA */ = {{
+\t\t\tisa = PBXNativeTarget;
+\t\t\tbuildConfigurationList = {build_config_list_target};
+\t\t\tbuildPhases = (
+\t\t\t\t{sources_phase_id} /* Sources */,
+\t\t\t\t{frameworks_phase_id} /* Frameworks */,
+\t\t\t\t{resources_phase_id} /* Resources */,
+\t\t\t);
+\t\t\tbuildRules = ();
+\t\t\tdependencies = ();
+\t\t\tname = TeamoA;
+\t\t\tpackageProductDependencies = (
+\t\t\t\t{package_product_dep_id} /* SwiftTerm */,
+\t\t\t);
+\t\t\tproductName = TeamoA;
+\t\t\tproductReference = {product_id} /* TeamoA.app */;
+\t\t\tproductType = "com.apple.product-type.application";
+\t\t}};
+/* End PBXNativeTarget section */
+
 """
-pbx += "/* End PBXNativeTarget section */\n\n"
 
 # PBXProject
-pbx += "/* Begin PBXProject section */\n"
-pbx += f"""\t\t{project_id} /* Project object */ = {{
-			isa = PBXProject;
-			attributes = {{
-				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 1430;
-			}};
-			buildConfigurationList = {build_config_list_project} /* Build configuration list for PBXProject "TeamoA" */;
-			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
-			hasScannedForEncodings = 0;
-			knownRegions = (
-				en,
-				Base,
-			);
-			mainGroup = {main_group_id};
-			packageReferences = (
-				{package_ref_id} /* XCRemoteSwiftPackageReference "SwiftTerm" */,
-			);
-			productRefGroup = {products_group_id} /* Products */;
-			projectDirPath = "";
-			projectRoot = "";
-			targets = (
-				{target_id} /* TeamoA */,
-			);
-		}};
-"""
-pbx += "/* End PBXProject section */\n\n"
+pbx += f"""/* Begin PBXProject section */
+\t\t{project_id} /* Project object */ = {{
+\t\t\tisa = PBXProject;
+\t\t\tattributes = {{
+\t\t\t\tBuildIndependentTargetsInParallel = 1;
+\t\t\t\tLastSwiftUpdateCheck = 1430;
+\t\t\t\tLastUpgradeCheck = 1430;
+\t\t\t}};
+\t\t\tbuildConfigurationList = {build_config_list_project};
+\t\t\tcompatibilityVersion = "Xcode 14.0";
+\t\t\tdevelopmentRegion = en;
+\t\t\thasScannedForEncodings = 0;
+\t\t\tknownRegions = (en, Base);
+\t\t\tmainGroup = {main_group_id};
+\t\t\tpackageReferences = (
+\t\t\t\t{package_ref_id} /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+\t\t\t);
+\t\t\tproductRefGroup = {products_group_id} /* Products */;
+\t\t\tprojectDirPath = "";
+\t\t\tprojectRoot = "";
+\t\t\ttargets = ({target_id} /* TeamoA */);
+\t\t}};
+/* End PBXProject section */
 
-# PBXResourcesBuildPhase
-pbx += "/* Begin PBXResourcesBuildPhase section */\n"
-res_files = ", ".join([f"\n\t\t\t\t{res_build[r]} /* {os.path.basename(r)} in Resources */" for r in resources])
-pbx += f"""\t\t{resources_phase_id} /* Resources */ = {{
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = ({res_files}
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		}};
-"""
-pbx += "/* End PBXResourcesBuildPhase section */\n\n"
-
-# PBXSourcesBuildPhase
-pbx += "/* Begin PBXSourcesBuildPhase section */\n"
-src_files = ", ".join([f"\n\t\t\t\t{build_files[s]} /* {os.path.basename(s)} in Sources */" for s in sources])
-pbx += f"""\t\t{sources_phase_id} /* Sources */ = {{
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = ({src_files}
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		}};
-"""
-pbx += "/* End PBXSourcesBuildPhase section */\n\n"
-
-# XCBuildConfiguration
-pbx += "/* Begin XCBuildConfiguration section */\n"
-
-# Project-level Debug
-pbx += f"""\t\t{debug_config_project} /* Debug */ = {{
-			isa = XCBuildConfiguration;
-			buildSettings = {{
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-			}};
-			name = Debug;
-		}};
 """
 
-# Project-level Release
-pbx += f"""\t\t{release_config_project} /* Release */ = {{
-			isa = XCBuildConfiguration;
-			buildSettings = {{
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_OPTIMIZATION_LEVEL = s;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				SDKROOT = macosx;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-			}};
-			name = Release;
-		}};
+# Build phases
+res_file_list = ",\n".join([f"\t\t\t\t{res_build[r]} /* {os.path.basename(r)} in Resources */" for r in resources])
+pbx += f"""/* Begin PBXResourcesBuildPhase section */
+\t\t{resources_phase_id} /* Resources */ = {{
+\t\t\tisa = PBXResourcesBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+{res_file_list}
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t}};
+/* End PBXResourcesBuildPhase section */
+
 """
 
-# Target-level Debug
-pbx += f"""\t\t{debug_config_target} /* Debug */ = {{
-			isa = XCBuildConfiguration;
-			buildSettings = {{
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = TeamoA/TeamoA.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Manual;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TeamoA/Info.plist;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Teamo Lab";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.teamolab.teamoa;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			}};
-			name = Debug;
-		}};
+src_file_list = ",\n".join([f"\t\t\t\t{build_files[s]} /* {os.path.basename(s)} in Sources */" for s in sources])
+pbx += f"""/* Begin PBXSourcesBuildPhase section */
+\t\t{sources_phase_id} /* Sources */ = {{
+\t\t\tisa = PBXSourcesBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+{src_file_list}
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t}};
+/* End PBXSourcesBuildPhase section */
+
 """
 
-# Target-level Release
-pbx += f"""\t\t{release_config_target} /* Release */ = {{
-			isa = XCBuildConfiguration;
-			buildSettings = {{
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = TeamoA/TeamoA.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
-				CODE_SIGN_STYLE = Manual;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = TeamoA/Info.plist;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Teamo Lab";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.teamolab.teamoa;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			}};
-			name = Release;
-		}};
-"""
-pbx += "/* End XCBuildConfiguration section */\n\n"
+# Build configs
+base_settings = """ALWAYS_SEARCH_USER_PATHS = NO;
+\t\t\t\tCLANG_ANALYZER_NONNULL = YES;
+\t\t\t\tCLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+\t\t\t\tCLANG_ENABLE_MODULES = YES;
+\t\t\t\tCLANG_ENABLE_OBJC_ARC = YES;
+\t\t\t\tCOPY_PHASE_STRIP = NO;
+\t\t\t\tENABLE_STRICT_OBJC_MSGSEND = YES;
+\t\t\t\tMACOSX_DEPLOYMENT_TARGET = 13.0;
+\t\t\t\tSDKROOT = macosx;"""
 
-# XCConfigurationList
-pbx += "/* Begin XCConfigurationList section */\n"
-pbx += f"""\t\t{build_config_list_project} /* Build configuration list for PBXProject "TeamoA" */ = {{
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				{debug_config_project} /* Debug */,
-				{release_config_project} /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		}};
-		{build_config_list_target} /* Build configuration list for PBXNativeTarget "TeamoA" */ = {{
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				{debug_config_target} /* Debug */,
-				{release_config_target} /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		}};
-"""
-pbx += "/* End XCConfigurationList section */\n\n"
+target_settings = """ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+\t\t\t\tASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+\t\t\t\tCODE_SIGN_ENTITLEMENTS = TeamoA/TeamoA.entitlements;
+\t\t\t\t"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+\t\t\t\tCODE_SIGN_STYLE = Manual;
+\t\t\t\tCOMBINE_HIDPI_IMAGES = YES;
+\t\t\t\tCURRENT_PROJECT_VERSION = 1;
+\t\t\t\tDEVELOPMENT_TEAM = "";
+\t\t\t\tENABLE_HARDENED_RUNTIME = YES;
+\t\t\t\tGENERATE_INFOPLIST_FILE = NO;
+\t\t\t\tINFOPLIST_FILE = TeamoA/Info.plist;
+\t\t\t\tLD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");
+\t\t\t\tMARKETING_VERSION = 0.2.0;
+\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.teamolab.teamoa;
+\t\t\t\tPRODUCT_NAME = "$(TARGET_NAME)";
+\t\t\t\tSWIFT_EMIT_LOC_STRINGS = YES;
+\t\t\t\tSWIFT_VERSION = 5.0;"""
 
-# XCRemoteSwiftPackageReference
-pbx += "/* Begin XCRemoteSwiftPackageReference section */\n"
-pbx += f"""\t\t{package_ref_id} /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {{
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm.git";
-			requirement = {{
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			}};
-		}};
-"""
-pbx += "/* End XCRemoteSwiftPackageReference section */\n\n"
+pbx += f"""/* Begin XCBuildConfiguration section */
+\t\t{debug_config_project} /* Debug */ = {{
+\t\t\tisa = XCBuildConfiguration;
+\t\t\tbuildSettings = {{
+\t\t\t\t{base_settings}
+\t\t\t\tDEBUG_INFORMATION_FORMAT = dwarf;
+\t\t\t\tENABLE_TESTABILITY = YES;
+\t\t\t\tGCC_DYNAMIC_NO_PIC = NO;
+\t\t\t\tGCC_OPTIMIZATION_LEVEL = 0;
+\t\t\t\tGCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)");
+\t\t\t\tMTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+\t\t\t\tONLY_ACTIVE_ARCH = YES;
+\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+\t\t\t\tSWIFT_OPTIMIZATION_LEVEL = "-Onone";
+\t\t\t}};
+\t\t\tname = Debug;
+\t\t}};
+\t\t{release_config_project} /* Release */ = {{
+\t\t\tisa = XCBuildConfiguration;
+\t\t\tbuildSettings = {{
+\t\t\t\t{base_settings}
+\t\t\t\tDEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+\t\t\t\tENABLE_NS_ASSERTIONS = NO;
+\t\t\t\tGCC_OPTIMIZATION_LEVEL = s;
+\t\t\t\tSWIFT_COMPILATION_MODE = wholemodule;
+\t\t\t\tSWIFT_OPTIMIZATION_LEVEL = "-O";
+\t\t\t}};
+\t\t\tname = Release;
+\t\t}};
+\t\t{debug_config_target} /* Debug */ = {{
+\t\t\tisa = XCBuildConfiguration;
+\t\t\tbuildSettings = {{
+\t\t\t\t{target_settings}
+\t\t\t}};
+\t\t\tname = Debug;
+\t\t}};
+\t\t{release_config_target} /* Release */ = {{
+\t\t\tisa = XCBuildConfiguration;
+\t\t\tbuildSettings = {{
+\t\t\t\t{target_settings}
+\t\t\t}};
+\t\t\tname = Release;
+\t\t}};
+/* End XCBuildConfiguration section */
 
-# XCSwiftPackageProductDependency
-pbx += "/* Begin XCSwiftPackageProductDependency section */\n"
-pbx += f"""\t\t{package_product_dep_id} /* SwiftTerm */ = {{
-			isa = XCSwiftPackageProductDependency;
-			package = {package_ref_id} /* XCRemoteSwiftPackageReference "SwiftTerm" */;
-			productName = SwiftTerm;
-		}};
-"""
-pbx += "/* End XCSwiftPackageProductDependency section */\n\n"
+/* Begin XCConfigurationList section */
+\t\t{build_config_list_project} = {{
+\t\t\tisa = XCConfigurationList;
+\t\t\tbuildConfigurations = ({debug_config_project} /* Debug */, {release_config_project} /* Release */);
+\t\t\tdefaultConfigurationIsVisible = 0;
+\t\t\tdefaultConfigurationName = Release;
+\t\t}};
+\t\t{build_config_list_target} = {{
+\t\t\tisa = XCConfigurationList;
+\t\t\tbuildConfigurations = ({debug_config_target} /* Debug */, {release_config_target} /* Release */);
+\t\t\tdefaultConfigurationIsVisible = 0;
+\t\t\tdefaultConfigurationName = Release;
+\t\t}};
+/* End XCConfigurationList section */
 
-# Close
-pbx += f"""	}};
-	rootObject = {project_id} /* Project object */;
+/* Begin XCRemoteSwiftPackageReference section */
+\t\t{package_ref_id} /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {{
+\t\t\tisa = XCRemoteSwiftPackageReference;
+\t\t\trepositoryURL = "https://github.com/migueldeicaza/SwiftTerm.git";
+\t\t\trequirement = {{
+\t\t\t\tkind = upToNextMajorVersion;
+\t\t\t\tminimumVersion = 1.0.0;
+\t\t\t}};
+\t\t}};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+\t\t{package_product_dep_id} /* SwiftTerm */ = {{
+\t\t\tisa = XCSwiftPackageProductDependency;
+\t\t\tpackage = {package_ref_id};
+\t\t\tproductName = SwiftTerm;
+\t\t}};
+/* End XCSwiftPackageProductDependency section */
+
+"""
+
+pbx += f"""\t}};
+\trootObject = {project_id} /* Project object */;
 }}
 """
 
-# Write the file
 proj_dir = os.path.expanduser("~/teamo-a/TeamoA/TeamoA.xcodeproj")
 os.makedirs(proj_dir, exist_ok=True)
 with open(os.path.join(proj_dir, "project.pbxproj"), "w") as f:

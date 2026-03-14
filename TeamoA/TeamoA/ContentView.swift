@@ -1,39 +1,50 @@
 import SwiftUI
 
+enum NavigationItem: Hashable {
+    case dashboard
+    case goals
+    case issues
+    case agent(UUID)
+}
+
 struct ContentView: View {
-    @EnvironmentObject var sessionStore: SessionStore
-    @State private var selectedSessionId: UUID?
-    @State private var showCreateSheet = false
+    @EnvironmentObject var store: ProjectStore
+    @State private var selectedItem: NavigationItem? = .dashboard
 
     var body: some View {
         NavigationSplitView {
-            SidebarView(
-                selectedSessionId: $selectedSessionId,
-                showCreateSheet: $showCreateSheet
-            )
-            .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
+            SidebarView(selectedItem: $selectedItem)
+                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
         } detail: {
-            if let id = selectedSessionId,
-               let session = sessionStore.session(byId: id) {
-                SessionDetailView(session: session)
+            detailView
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToAgent)) { notification in
+            if let id = notification.userInfo?["agentId"] as? UUID {
+                selectedItem = .agent(id)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var detailView: some View {
+        switch selectedItem {
+        case .dashboard, .none:
+            DashboardView()
+        case .goals:
+            GoalsListView()
+        case .issues:
+            IssuesListView()
+        case .agent(let id):
+            if let agent = store.agent(byId: id) {
+                AgentDetailView(agent: agent)
             } else {
-                DashboardView(selectedSessionId: $selectedSessionId)
-            }
-        }
-        .sheet(isPresented: $showCreateSheet) {
-            CreateSessionView { newSession in
-                sessionStore.addSession(newSession)
-                selectedSessionId = newSession.id
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .navigateToSession)) { notification in
-            if let id = notification.userInfo?["sessionId"] as? UUID {
-                selectedSessionId = id
+                Text("Agent not found")
+                    .foregroundColor(.secondary)
             }
         }
     }
 }
 
 extension Notification.Name {
-    static let navigateToSession = Notification.Name("navigateToSession")
+    static let navigateToAgent = Notification.Name("navigateToAgent")
 }

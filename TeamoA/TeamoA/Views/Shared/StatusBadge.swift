@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct StatusBadge: View {
-    let state: SessionState
+    let state: AgentState
 
     var body: some View {
         HStack(spacing: 4) {

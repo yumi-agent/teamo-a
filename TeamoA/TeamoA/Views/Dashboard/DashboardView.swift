@@ -1,108 +1,131 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @EnvironmentObject var sessionStore: SessionStore
-    @Binding var selectedSessionId: UUID?
-    @State private var searchText = ""
-
-    private var filteredSessions: [AgentSession] {
-        if searchText.isEmpty {
-            return sessionStore.sessions
-        }
-        return sessionStore.sessions.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText) ||
-            $0.engine.displayName.localizedCaseInsensitiveContains(searchText)
-        }
-    }
+    @EnvironmentObject var store: ProjectStore
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Stats bar
-            HStack(spacing: 24) {
-                StatItem(
-                    label: "Total",
-                    count: sessionStore.sessions.count,
-                    color: .primary
-                )
-                StatItem(
-                    label: "Running",
-                    count: sessionStore.runningSessions.count,
-                    color: .green
-                )
-                StatItem(
-                    label: "Waiting",
-                    count: sessionStore.waitingSessions.count,
-                    color: .orange
-                )
-                StatItem(
-                    label: "Stopped",
-                    count: sessionStore.stoppedSessions.count,
-                    color: .gray
-                )
-                Spacer()
-            }
-            .padding()
-            .background(.ultraThinMaterial)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                if let project = store.currentProject {
+                    Text(project.name)
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
 
-            Divider()
+                // Stats Cards
+                HStack(spacing: 16) {
+                    StatCard(
+                        value: "\(store.currentAgents.count)",
+                        title: "Agents Enabled",
+                        subtitle: "\(store.runningAgentsCount) running, \(store.pausedAgentsCount) paused",
+                        icon: "person.3",
+                        color: .blue
+                    )
+                    StatCard(
+                        value: "\(store.openIssuesCount)",
+                        title: "Open Issues",
+                        subtitle: "\(store.blockedIssuesCount) blocked",
+                        icon: "circle.dotted",
+                        color: .orange
+                    )
+                    StatCard(
+                        value: "\(store.goalsCompletedCount)/\(store.goalsTotalCount)",
+                        title: "Goals Progress",
+                        subtitle: goalProgressText,
+                        icon: "target",
+                        color: .green
+                    )
+                    StatCard(
+                        value: "\(pendingApprovals)",
+                        title: "Pending Approvals",
+                        subtitle: "0 stale tasks",
+                        icon: "clock.badge.checkmark",
+                        color: .purple
+                    )
+                }
 
-            if sessionStore.sessions.isEmpty {
-                EmptyDashboardView()
-            } else {
-                ScrollView {
-                    LazyVGrid(
-                        columns: [
-                            GridItem(.adaptive(minimum: 280, maximum: 400), spacing: 16)
-                        ],
-                        spacing: 16
-                    ) {
-                        ForEach(filteredSessions) { session in
-                            SessionCard(session: session)
-                                .onTapGesture {
-                                    selectedSessionId = session.id
-                                }
+                // Two columns: Recent Activity + Recent Issues
+                HStack(alignment: .top, spacing: 24) {
+                    // Recent Activity
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("RECENT ACTIVITY")
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+
+                        ActivityFeedView(activities: Array(store.currentActivities.prefix(10)))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Recent Issues
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("RECENT ISSUES")
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+
+                        ForEach(store.currentIssues.prefix(8)) { issue in
+                            IssueQuickRow(issue: issue)
+                        }
+
+                        if store.currentIssues.isEmpty {
+                            Text("No issues yet")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
                         }
                     }
-                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .searchable(text: $searchText, prompt: "Search sessions...")
             }
+            .padding(24)
         }
+        .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Dashboard")
     }
-}
 
-struct StatItem: View {
-    let label: String
-    let count: Int
-    let color: Color
+    private var goalProgressText: String {
+        let inProgress = store.currentGoals.filter { $0.status == .inProgress }.count
+        return "\(inProgress) in progress"
+    }
 
-    var body: some View {
-        VStack(spacing: 2) {
-            Text("\(count)")
-                .font(.title2.bold())
-                .foregroundColor(color)
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
+    private var pendingApprovals: Int {
+        // Issues in blocked state that might need human approval
+        store.currentIssues.filter { $0.status == .blocked }.count
     }
 }
 
-struct EmptyDashboardView: View {
+struct IssueQuickRow: View {
+    @ObservedObject var issue: Issue
+
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Image(systemName: "plus.rectangle.on.folder")
-                .font(.system(size: 56))
+        HStack(spacing: 8) {
+            Text("-")
                 .foregroundColor(.secondary)
-            Text("No Agent Sessions")
-                .font(.title2)
-            Text("Create a new session to get started.\nPress Cmd+N or click the + button in the sidebar.")
-                .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
+
+            Image(systemName: issue.status.iconName)
+                .font(.system(size: 12))
+                .foregroundColor(issue.status.color)
+
+            Text(issue.title)
+                .font(.system(size: 13))
+                .lineLimit(1)
+
             Spacer()
+
+            if let name = issue.assigneeName {
+                Text(name)
+                    .font(.caption2)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(.secondary.opacity(0.15)))
+            }
+
+            Text(issue.createdAt, style: .relative)
+                .font(.caption2)
+                .foregroundColor(.secondary)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 2)
     }
 }
