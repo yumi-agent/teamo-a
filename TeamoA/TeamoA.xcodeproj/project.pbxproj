@@ -1,0 +1,420 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F5D7B9DF6332D9258FE3765D /* TeamoAApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7CDE3F1FECA560CD9F3EBF3 /* TeamoAApp.swift */; };
+		F3EB1DD40F7AFFCF4C5B2777 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8C13525269D9F9FAC9D986 /* ContentView.swift */; };
+		E9C06970C1A865A68A14150A /* AgentEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 560B51A1DCB4A04AD6ED3837 /* AgentEngine.swift */; };
+		52001AB3924C6C9CF040DEB8 /* SessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F714AF0A9D84AC611CC948 /* SessionState.swift */; };
+		8A6E0B0FE520433613DD5789 /* AgentSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A3C56CE1FECB1877EC4A42 /* AgentSession.swift */; };
+		C786E081705B8B4262FA74D7 /* PTYManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D587CEB69CD2740635F12F /* PTYManager.swift */; };
+		FD64B4F704F6D3C0D3E78D3B /* AgentStateDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53B6A8CBB66BA3D0D75235A /* AgentStateDetector.swift */; };
+		AF2736EB4BB7D6AFECA8321D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BA598DF8F6BB0151C846605 /* NotificationService.swift */; };
+		BB34CD36BCE7555E3FA5F7FB /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3388973B735D8F856994EB1 /* SessionStore.swift */; };
+		6DC5962D68D1518F2CB6F78C /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72F84D7CC1C53FED0A3BDBBF /* SidebarView.swift */; };
+		ACD0765BF25228DCAC80C746 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 003E83886E57C5B1F91A8EFD /* DashboardView.swift */; };
+		577079A5DB2DF1B17FAFA960 /* SessionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD84FDCCB523440D13135348 /* SessionCard.swift */; };
+		B2FF7B239E40A028E100EC35 /* SwiftTermView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0623BF077F9DD8F2D8322492 /* SwiftTermView.swift */; };
+		25C4B6849572A0C8275417E5 /* TerminalContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5542F232B272783E8C84A1 /* TerminalContainerView.swift */; };
+		6F48B4C7E47A60B4C5619FA2 /* InputAreaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DE3074B73DF48582672B385 /* InputAreaView.swift */; };
+		1CF11FCBEF46B61A2CDC0A60 /* CreateSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE353D0F63F314244F3277FB /* CreateSessionView.swift */; };
+		40E70A862C10278CF581E4A1 /* SessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7CB25B7C35A062EBEC850D /* SessionDetailView.swift */; };
+		03D0FAEF7ABFA96301E1F83E /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5832927F284C360971714F2 /* StatusBadge.swift */; };
+		96024882B00CC2B4806DF917 /* EngineIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B898C4D753483721F2C2F6 /* EngineIcon.swift */; };
+		D2D8D95CA703EDF7210D0048 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39DF35C5B235782381DC07AE /* Assets.xcassets */; };
+		C63A26F10DCB4FF127C6ABA0 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 9CE0B8D89C8DCF9B2C9960F7 /* SwiftTerm */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F7CDE3F1FECA560CD9F3EBF3 /* TeamoAApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TeamoAApp.swift"; sourceTree = "<group>"; };
+		0A8C13525269D9F9FAC9D986 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView.swift"; sourceTree = "<group>"; };
+		560B51A1DCB4A04AD6ED3837 /* AgentEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentEngine.swift"; sourceTree = "<group>"; };
+		C0F714AF0A9D84AC611CC948 /* SessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionState.swift"; sourceTree = "<group>"; };
+		B0A3C56CE1FECB1877EC4A42 /* AgentSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentSession.swift"; sourceTree = "<group>"; };
+		C5D587CEB69CD2740635F12F /* PTYManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTYManager.swift"; sourceTree = "<group>"; };
+		D53B6A8CBB66BA3D0D75235A /* AgentStateDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentStateDetector.swift"; sourceTree = "<group>"; };
+		0BA598DF8F6BB0151C846605 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NotificationService.swift"; sourceTree = "<group>"; };
+		C3388973B735D8F856994EB1 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionStore.swift"; sourceTree = "<group>"; };
+		72F84D7CC1C53FED0A3BDBBF /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SidebarView.swift"; sourceTree = "<group>"; };
+		003E83886E57C5B1F91A8EFD /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardView.swift"; sourceTree = "<group>"; };
+		DD84FDCCB523440D13135348 /* SessionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionCard.swift"; sourceTree = "<group>"; };
+		0623BF077F9DD8F2D8322492 /* SwiftTermView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SwiftTermView.swift"; sourceTree = "<group>"; };
+		4C5542F232B272783E8C84A1 /* TerminalContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalContainerView.swift"; sourceTree = "<group>"; };
+		4DE3074B73DF48582672B385 /* InputAreaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "InputAreaView.swift"; sourceTree = "<group>"; };
+		BE353D0F63F314244F3277FB /* CreateSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CreateSessionView.swift"; sourceTree = "<group>"; };
+		4C7CB25B7C35A062EBEC850D /* SessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SessionDetailView.swift"; sourceTree = "<group>"; };
+		A5832927F284C360971714F2 /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusBadge.swift"; sourceTree = "<group>"; };
+		F6B898C4D753483721F2C2F6 /* EngineIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EngineIcon.swift"; sourceTree = "<group>"; };
+		39DF35C5B235782381DC07AE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
+		90F19FB24A3D4E0CECCBB391 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		447BA75BCCBEC31888890E33 /* TeamoA.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "TeamoA.entitlements"; sourceTree = "<group>"; };
+		A97C29AD63741CF438998CE6 /* TeamoA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TeamoA.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		29B2D46AA747A59804D46E1F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C63A26F10DCB4FF127C6ABA0 /* SwiftTerm in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5928955287B8089ED2177128 = {
+			isa = PBXGroup;
+			children = (
+				D685C104AFFBCF83C7CB0FB6 /* TeamoA */,
+				BF7A2D27A78D590BDEF15AF2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BF7A2D27A78D590BDEF15AF2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A97C29AD63741CF438998CE6 /* TeamoA.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D685C104AFFBCF83C7CB0FB6 /* TeamoA */ = {
+			isa = PBXGroup;
+			children = (
+				F7CDE3F1FECA560CD9F3EBF3 /* TeamoAApp.swift */,
+				0A8C13525269D9F9FAC9D986 /* ContentView.swift */,
+				C9E04F99D8E7C9D4D391AEF8 /* Models */,
+				9C035E7454E6255EF4EA445C /* Services */,
+				9F58BDF7D4F04F6C4DC3CB6C /* Views */,
+				AE59D88C5460D2413CB142C1 /* Resources */,
+				90F19FB24A3D4E0CECCBB391 /* Info.plist */,
+				447BA75BCCBEC31888890E33 /* TeamoA.entitlements */,
+			);
+			path = TeamoA;
+			sourceTree = "<group>";
+		};
+		C9E04F99D8E7C9D4D391AEF8 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				560B51A1DCB4A04AD6ED3837 /* AgentEngine.swift */, 
+				C0F714AF0A9D84AC611CC948 /* SessionState.swift */, 
+				B0A3C56CE1FECB1877EC4A42 /* AgentSession.swift */
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		9C035E7454E6255EF4EA445C /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C5D587CEB69CD2740635F12F /* PTYManager.swift */, 
+				D53B6A8CBB66BA3D0D75235A /* AgentStateDetector.swift */, 
+				0BA598DF8F6BB0151C846605 /* NotificationService.swift */, 
+				C3388973B735D8F856994EB1 /* SessionStore.swift */
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		9F58BDF7D4F04F6C4DC3CB6C /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				72F84D7CC1C53FED0A3BDBBF /* SidebarView.swift */,
+				7D10DE6616F4349475E0D099 /* Dashboard */,
+				F31464CB7203A68C78A14A89 /* Terminal */,
+				A16FB3D734D2E2EE98826AA3 /* Session */,
+				9B8EA7C3EDD85BDD3B598AA8 /* Shared */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7D10DE6616F4349475E0D099 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				003E83886E57C5B1F91A8EFD /* DashboardView.swift */, 
+				DD84FDCCB523440D13135348 /* SessionCard.swift */
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		F31464CB7203A68C78A14A89 /* Terminal */ = {
+			isa = PBXGroup;
+			children = (
+				0623BF077F9DD8F2D8322492 /* SwiftTermView.swift */, 
+				4C5542F232B272783E8C84A1 /* TerminalContainerView.swift */, 
+				4DE3074B73DF48582672B385 /* InputAreaView.swift */
+			);
+			path = Terminal;
+			sourceTree = "<group>";
+		};
+		A16FB3D734D2E2EE98826AA3 /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				BE353D0F63F314244F3277FB /* CreateSessionView.swift */, 
+				4C7CB25B7C35A062EBEC850D /* SessionDetailView.swift */
+			);
+			path = Session;
+			sourceTree = "<group>";
+		};
+		9B8EA7C3EDD85BDD3B598AA8 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A5832927F284C360971714F2 /* StatusBadge.swift */, 
+				F6B898C4D753483721F2C2F6 /* EngineIcon.swift */
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		AE59D88C5460D2413CB142C1 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				39DF35C5B235782381DC07AE /* Assets.xcassets */
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		42AEFBAE01D2DFD981F7DA7D /* TeamoA */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 210C36C6289F9B5EE230C602 /* Build configuration list for PBXNativeTarget "TeamoA" */;
+			buildPhases = (
+				E7209FB05162B7572F88D05E /* Sources */,
+				29B2D46AA747A59804D46E1F /* Frameworks */,
+				66F8606E9F0A136E2228EBCB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TeamoA;
+			packageProductDependencies = (
+				9CE0B8D89C8DCF9B2C9960F7 /* SwiftTerm */,
+			);
+			productName = TeamoA;
+			productReference = A97C29AD63741CF438998CE6 /* TeamoA.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		46F86FAA6BBF9AC94A7E4595 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1430;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 6EBC3EC1F32488E30AF9876B /* Build configuration list for PBXProject "TeamoA" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5928955287B8089ED2177128;
+			packageReferences = (
+				74BB83A59DAB176451068784 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+			);
+			productRefGroup = BF7A2D27A78D590BDEF15AF2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				42AEFBAE01D2DFD981F7DA7D /* TeamoA */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		66F8606E9F0A136E2228EBCB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D2D8D95CA703EDF7210D0048 /* Assets.xcassets in Resources */
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E7209FB05162B7572F88D05E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F5D7B9DF6332D9258FE3765D /* TeamoAApp.swift in Sources */, 
+				F3EB1DD40F7AFFCF4C5B2777 /* ContentView.swift in Sources */, 
+				E9C06970C1A865A68A14150A /* AgentEngine.swift in Sources */, 
+				52001AB3924C6C9CF040DEB8 /* SessionState.swift in Sources */, 
+				8A6E0B0FE520433613DD5789 /* AgentSession.swift in Sources */, 
+				C786E081705B8B4262FA74D7 /* PTYManager.swift in Sources */, 
+				FD64B4F704F6D3C0D3E78D3B /* AgentStateDetector.swift in Sources */, 
+				AF2736EB4BB7D6AFECA8321D /* NotificationService.swift in Sources */, 
+				BB34CD36BCE7555E3FA5F7FB /* SessionStore.swift in Sources */, 
+				6DC5962D68D1518F2CB6F78C /* SidebarView.swift in Sources */, 
+				ACD0765BF25228DCAC80C746 /* DashboardView.swift in Sources */, 
+				577079A5DB2DF1B17FAFA960 /* SessionCard.swift in Sources */, 
+				B2FF7B239E40A028E100EC35 /* SwiftTermView.swift in Sources */, 
+				25C4B6849572A0C8275417E5 /* TerminalContainerView.swift in Sources */, 
+				6F48B4C7E47A60B4C5619FA2 /* InputAreaView.swift in Sources */, 
+				1CF11FCBEF46B61A2CDC0A60 /* CreateSessionView.swift in Sources */, 
+				40E70A862C10278CF581E4A1 /* SessionDetailView.swift in Sources */, 
+				03D0FAEF7ABFA96301E1F83E /* StatusBadge.swift in Sources */, 
+				96024882B00CC2B4806DF917 /* EngineIcon.swift in Sources */
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A3FA7BC046E62B1245F73497 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E635DC0A16885DF2F7BE774B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		EA519AEBFC56C3FABDB22367 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TeamoA/TeamoA.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TeamoA/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Teamo Lab";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teamolab.teamoa;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		80BB3E01927863D718CAEC94 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TeamoA/TeamoA.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TeamoA/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright 2026 Teamo Lab";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teamolab.teamoa;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6EBC3EC1F32488E30AF9876B /* Build configuration list for PBXProject "TeamoA" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A3FA7BC046E62B1245F73497 /* Debug */,
+				E635DC0A16885DF2F7BE774B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		210C36C6289F9B5EE230C602 /* Build configuration list for PBXNativeTarget "TeamoA" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EA519AEBFC56C3FABDB22367 /* Debug */,
+				80BB3E01927863D718CAEC94 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		74BB83A59DAB176451068784 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9CE0B8D89C8DCF9B2C9960F7 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 74BB83A59DAB176451068784 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+}
