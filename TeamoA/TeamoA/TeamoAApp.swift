@@ -4,12 +4,14 @@ import SwiftUI
 struct TeamoAApp: App {
     @StateObject private var store = ProjectStore()
     @StateObject private var notificationService = NotificationService()
+    @StateObject private var sessionManager = TerminalSessionManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(store)
                 .environmentObject(notificationService)
+                .environmentObject(sessionManager)
                 .frame(minWidth: 960, minHeight: 640)
                 .onAppear {
                     notificationService.requestPermission()

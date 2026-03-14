@@ -16,6 +16,7 @@
 		70654F86FDDF5D279061A972 /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 178654EB44CEE4DD8352963B /* Agent.swift */; };
 		C0F306E5E516764E42F7A52C /* ActivityEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B77E7117BF75A8FE9D59E08 /* ActivityEvent.swift */; };
 		C786E081705B8B4262FA74D7 /* PTYManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D587CEB69CD2740635F12F /* PTYManager.swift */; };
+		D54AF0F2BA6B49B0815D699D /* TerminalSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D558B4FA5ED743078AA3F262 /* TerminalSessionManager.swift */; };
 		FD64B4F704F6D3C0D3E78D3B /* AgentStateDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53B6A8CBB66BA3D0D75235A /* AgentStateDetector.swift */; };
 		AF2736EB4BB7D6AFECA8321D /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BA598DF8F6BB0151C846605 /* NotificationService.swift */; };
 		1FA05C8BB97CDDCA0BFC9334 /* ProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4D0D7B44B8F583CA93DB94 /* ProjectStore.swift */; };
@@ -48,6 +49,7 @@
 		178654EB44CEE4DD8352963B /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent.swift"; sourceTree = "<group>"; };
 		0B77E7117BF75A8FE9D59E08 /* ActivityEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ActivityEvent.swift"; sourceTree = "<group>"; };
 		C5D587CEB69CD2740635F12F /* PTYManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PTYManager.swift"; sourceTree = "<group>"; };
+		D558B4FA5ED743078AA3F262 /* TerminalSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSessionManager.swift; sourceTree = "<group>"; };
 		D53B6A8CBB66BA3D0D75235A /* AgentStateDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentStateDetector.swift"; sourceTree = "<group>"; };
 		0BA598DF8F6BB0151C846605 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NotificationService.swift"; sourceTree = "<group>"; };
 		9A4D0D7B44B8F583CA93DB94 /* ProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProjectStore.swift"; sourceTree = "<group>"; };
@@ -132,6 +134,7 @@
 			isa = PBXGroup;
 			children = (
 				C5D587CEB69CD2740635F12F /* PTYManager.swift */,
+				D558B4FA5ED743078AA3F262 /* TerminalSessionManager.swift */,
 				D53B6A8CBB66BA3D0D75235A /* AgentStateDetector.swift */,
 				0BA598DF8F6BB0151C846605 /* NotificationService.swift */,
 				9A4D0D7B44B8F583CA93DB94 /* ProjectStore.swift */
@@ -289,6 +292,7 @@
 				70654F86FDDF5D279061A972 /* Agent.swift in Sources */,
 				C0F306E5E516764E42F7A52C /* ActivityEvent.swift in Sources */,
 				C786E081705B8B4262FA74D7 /* PTYManager.swift in Sources */,
+				D54AF0F2BA6B49B0815D699D /* TerminalSessionManager.swift in Sources */,
 				FD64B4F704F6D3C0D3E78D3B /* AgentStateDetector.swift in Sources */,
 				AF2736EB4BB7D6AFECA8321D /* NotificationService.swift in Sources */,
 				1FA05C8BB97CDDCA0BFC9334 /* ProjectStore.swift in Sources */,
@@ -368,7 +372,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = TeamoA/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");
@@ -391,7 +395,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = TeamoA/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");

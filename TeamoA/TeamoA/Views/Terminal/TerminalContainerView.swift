@@ -5,23 +5,16 @@ struct TerminalContainerView: View {
     @ObservedObject var agent: Agent
     @EnvironmentObject var store: ProjectStore
     @EnvironmentObject var notificationService: NotificationService
-
-    @StateObject private var controller = TerminalController()
+    @EnvironmentObject var sessionManager: TerminalSessionManager
 
     var body: some View {
         VStack(spacing: 0) {
-            // Terminal
-            SwiftTermView(
-                ptyManager: controller.ptyManager,
-                backgroundColor: NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0),
-                onTerminalReady: { tv in
-                    controller.terminalView = tv
-                    // Start session after terminal view is ready
-                    // (onAppear already ran by this point since onTerminalReady dispatches async)
-                    if !controller.ptyManager.isRunning {
-                        controller.startSession()
-                    }
-                }
+            // Terminal — uses persistent session from manager
+            PersistentTerminalView(
+                session: sessionManager.session(
+                    for: agent, store: store,
+                    notificationService: notificationService
+                )
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -29,18 +22,91 @@ struct TerminalContainerView: View {
 
             // Input area
             InputAreaView { text in
-                controller.sendInput(text)
+                sessionManager.session(
+                    for: agent, store: store,
+                    notificationService: notificationService
+                ).controller.sendInput(text)
             }
         }
         .onAppear {
-            controller.agent = agent
-            controller.notificationService = notificationService
-            controller.store = store
+            let session = sessionManager.session(
+                for: agent, store: store,
+                notificationService: notificationService
+            )
+            if !session.isStarted {
+                session.isStarted = true
+                session.controller.startSession()
+            }
         }
     }
 }
 
-class TerminalController: ObservableObject {
+// MARK: - PersistentTerminalView
+
+/// NSViewRepresentable that reuses a cached TerminalView from the session.
+/// The TerminalView instance survives navigation — only the container NSView
+/// is created/destroyed by SwiftUI.
+struct PersistentTerminalView: NSViewRepresentable {
+    let session: TerminalSession
+
+    func makeNSView(context: Context) -> NSView {
+        let container = NSView()
+        embedTerminalView(in: container)
+        return container
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        // Re-embed if the terminal view was detached (e.g. after navigation)
+        let tv = getOrCreateTerminalView()
+        if tv.superview !== nsView {
+            embedTerminalView(in: nsView)
+        }
+    }
+
+    private func embedTerminalView(in container: NSView) {
+        let tv = getOrCreateTerminalView()
+        tv.removeFromSuperview()
+        tv.autoresizingMask = [.width, .height]
+        container.addSubview(tv)
+
+        // Force full redraw by triggering a resize cycle after layout
+        DispatchQueue.main.async {
+            // Set frame to container bounds (may be zero initially)
+            if container.bounds.width > 0 && container.bounds.height > 0 {
+                // Resize trick: change frame by 1px then back to force SwiftTerm's
+                // processSizeChange() which does a full terminal layout + redraw
+                var frame = container.bounds
+                frame.size.width -= 1
+                tv.frame = frame
+                frame.size.width += 1
+                tv.frame = frame
+            }
+            let terminal = tv.getTerminal()
+            terminal.refresh(startRow: 0, endRow: max(0, terminal.rows - 1))
+            tv.needsDisplay = true
+        }
+    }
+
+    private func getOrCreateTerminalView() -> TerminalView {
+        if let cached = session.cachedTerminalView {
+            return cached
+        }
+
+        let tv = TerminalView(frame: .zero)
+        tv.nativeBackgroundColor = NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
+        tv.nativeForegroundColor = .white
+        tv.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        tv.terminalDelegate = session.controller
+
+        session.cachedTerminalView = tv
+        session.controller.terminalView = tv
+        return tv
+    }
+}
+
+// MARK: - TerminalController
+
+class TerminalController: NSObject, ObservableObject {
     let ptyManager = PTYManager()
     let stateDetector = AgentStateDetector()
 
@@ -52,7 +118,8 @@ class TerminalController: ObservableObject {
     private var engineLaunchedAt: Date?
     private var initialGoalSent = false
 
-    init() {
+    override init() {
+        super.init()
         ptyManager.delegate = self
         stateDetector.delegate = self
     }
@@ -62,7 +129,6 @@ class TerminalController: ObservableObject {
         let workDir = store?.currentWorkspace?.workingDirectory ?? NSHomeDirectory()
 
         do {
-            // Start a login shell — ensures PATH includes nvm, pyenv, etc.
             try ptyManager.start(
                 command: "/bin/zsh",
                 arguments: ["--login"],
@@ -72,19 +138,18 @@ class TerminalController: ObservableObject {
             stateDetector.start()
             store?.objectWillChange.send()
 
-            // After shell initializes, send the agent engine command
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
                 guard let self = self, let agent = self.agent else { return }
                 let cmd = agent.engine.launchCommand
                 self.ptyManager.write(cmd + "\n")
                 self.engineLaunchedAt = Date()
 
-                // Auto-accept workspace trust check after 3 seconds
+                // Auto-accept workspace trust check
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
                     self?.ptyManager.write("\r")
                 }
 
-                // Timer-based fallback: send initial goal after Claude Code has had time to start
+                // Timer-based fallback: send initial goal
                 DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
                     self?.trySendInitialGoal()
                 }
@@ -115,9 +180,49 @@ class TerminalController: ObservableObject {
     }
 }
 
+// MARK: - TerminalViewDelegate
+
+extension TerminalController: TerminalViewDelegate {
+    func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        ptyManager.write(Data(data))
+    }
+
+    func scrolled(source: TerminalView, position: Double) {}
+
+    func setTerminalTitle(source: TerminalView, title: String) {}
+
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        ptyManager.resize(cols: newCols, rows: newRows)
+    }
+
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+
+    func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
+        if let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
+
+    func clipboardCopy(source: TerminalView, content: Data) {
+        if let str = String(data: content, encoding: .utf8) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(str, forType: .string)
+        }
+    }
+
+    func bell(source: TerminalView) {
+        NSSound.beep()
+    }
+
+    func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {}
+}
+
+// MARK: - PTYManagerDelegate
+
 extension TerminalController: PTYManagerDelegate {
     func ptyManager(_ manager: PTYManager, didReceiveOutput data: Data) {
-        // Feed output directly to TerminalView
         let bytes = Array(data)
         terminalView?.feed(byteArray: ArraySlice(bytes))
 
@@ -142,12 +247,13 @@ extension TerminalController: PTYManagerDelegate {
     }
 }
 
+// MARK: - AgentStateDetectorDelegate
+
 extension TerminalController: AgentStateDetectorDelegate {
     func stateDetector(_ detector: AgentStateDetector, didDetectState state: SessionState) {
         guard let agent = agent else { return }
         let previousState = agent.state
 
-        // Map SessionState to AgentState
         let newState: AgentState
         switch state {
         case .running: newState = .running
@@ -160,12 +266,10 @@ extension TerminalController: AgentStateDetectorDelegate {
         agent.lastActivityAt = Date()
         store?.objectWillChange.send()
 
-        // Auto-send initial goal when agent enters waiting state
         if newState == .paused {
             trySendInitialGoal()
         }
 
-        // Notify on meaningful transitions
         if previousState == .running && (newState == .paused || newState == .stopped) {
             let title = newState == .paused ? "[\(agent.name)] Waiting for Input" : "[\(agent.name)] Completed"
             let body = newState == .paused ? "Agent is waiting for your response" : "Agent session has finished"
