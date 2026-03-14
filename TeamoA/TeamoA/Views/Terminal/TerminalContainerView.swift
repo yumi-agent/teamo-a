@@ -83,6 +83,11 @@ class TerminalController: ObservableObject {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
                     self?.ptyManager.write("\r")
                 }
+
+                // Timer-based fallback: send initial goal after Claude Code has had time to start
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) { [weak self] in
+                    self?.trySendInitialGoal()
+                }
             }
         } catch {
             print("Failed to start session: \(error)")

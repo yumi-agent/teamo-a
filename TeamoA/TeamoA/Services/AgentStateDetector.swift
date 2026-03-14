@@ -33,6 +33,16 @@ class AgentStateDetector {
         return patterns.compactMap { try? NSRegularExpression(pattern: $0, options: [.caseInsensitive]) }
     }()
 
+    // Lines that are UI decorations, not actual agent work
+    private let decorationPatterns: [NSRegularExpression] = {
+        let patterns = [
+            "^>>\\s+bypass",
+            "^>>\\s+permissions",
+            "shift\\+tab to cycle",
+        ]
+        return patterns.compactMap { try? NSRegularExpression(pattern: $0, options: [.caseInsensitive]) }
+    }()
+
     func start() {
         updateState(.running)
         startIdleTimer()
@@ -55,14 +65,30 @@ class AgentStateDetector {
 
         // Strip ANSI escape sequences before pattern matching
         let stripped = stripAnsiEscapes(text)
+        let trimmed = stripped.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Ignore empty output
+        guard !trimmed.isEmpty else { return }
+
         let lines = stripped.components(separatedBy: "\n")
         let recentText = lines.suffix(3).joined(separator: "\n")
 
+        // Check for waiting patterns
         for pattern in waitingPatterns {
             let range = NSRange(recentText.startIndex..., in: recentText)
             if pattern.firstMatch(in: recentText, options: [], range: range) != nil {
                 updateState(.waiting)
                 return
+            }
+        }
+
+        // If currently waiting, don't transition to running for decoration output
+        if currentState == .waiting {
+            for pattern in decorationPatterns {
+                let range = NSRange(trimmed.startIndex..., in: trimmed)
+                if pattern.firstMatch(in: trimmed, options: [], range: range) != nil {
+                    return // Stay in waiting state
+                }
             }
         }
 
