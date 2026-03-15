@@ -254,6 +254,10 @@ class TerminalController: NSObject, ObservableObject {
     var store: ProjectStore?
     var terminalView: TerminalView?
 
+    /// Accumulated terminal output lines for search
+    var outputLines: [String] = []
+    private var currentLineBuffer = ""
+
     private var engineLaunchedAt: Date?
     private var initialGoalSent = false
 
@@ -367,6 +371,26 @@ extension TerminalController: PTYManagerDelegate {
 
         if let text = String(data: data, encoding: .utf8) {
             stateDetector.feedOutput(text)
+            appendToOutputBuffer(text)
+        }
+    }
+
+    private func appendToOutputBuffer(_ text: String) {
+        currentLineBuffer += text
+        while let range = currentLineBuffer.range(of: "\n") {
+            let line = String(currentLineBuffer[currentLineBuffer.startIndex..<range.lowerBound])
+            // Strip ANSI escape sequences for cleaner search
+            let cleaned = line.replacingOccurrences(
+                of: "\u{1B}\\[[0-9;]*[a-zA-Z]",
+                with: "",
+                options: .regularExpression
+            )
+            outputLines.append(cleaned)
+            currentLineBuffer = String(currentLineBuffer[range.upperBound...])
+        }
+        // Cap at 10000 lines
+        if outputLines.count > 10000 {
+            outputLines.removeFirst(outputLines.count - 10000)
         }
     }
 

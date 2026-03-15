@@ -80,18 +80,18 @@ Started: 2025-03-15
 - 无额外代码变更
 ---
 
-## 2025-03-15 - US-018: Terminal Output Search
-- 在 TerminalContainerView 中实现搜索功能（而非 AgentDetailView，因为搜索与终端紧耦合）
-- 搜索按钮放在 InputArea 右侧，点击展开搜索栏
-- 搜索逻辑：遍历 terminal.getScrollInvariantLine(row:) 获取所有 buffer 行的文本
-- 匹配结果显示 "X/Y" 计数器，上下箭头在匹配间导航
-- 导航通过 tv.scroll(toPosition:) 滚动到匹配行附近
-- 清理了 AgentDetailView 中旧的不编译搜索代码（使用了 internal API buffer.lines）
-- Files changed: TerminalContainerView.swift (major), AgentDetailView.swift (cleanup)
+## 2026-03-15 - US-018: Terminal Output Search
+- AgentDetailView header 添加搜索按钮（放大镜图标），点击展开搜索栏
+- 搜索栏：输入框 + 匹配计数 (X/Y) + 上下导航箭头
+- TerminalController 新增 outputLines 属性，PTY 输出时实时累积（ANSI 清理 + 按行分割）
+- 搜索逻辑：遍历 controller.outputLines 进行大小写不敏感匹配
+- 上限 10000 行防止内存膨胀
+- Files changed: AgentDetailView.swift, TerminalContainerView.swift
 - **Learnings:**
-  - SwiftTerm 的 buffer.lines 是 internal，不能从外部访问
-  - 用 getScrollInvariantLine(row:) 从 0 开始迭代可绕过此限制
-  - translateToString(trimRight: true) 是从 BufferLine 获取文本的正确方式
+  - SwiftTerm 的 buffer.lines 是 internal，不能从外部直接访问
+  - getScrollInvariantLine(row:) 虽然 public 但需要知道行范围（linesTop 也是 internal）
+  - 最佳方案：在 TerminalController 层面累积 PTY 输出文本，不依赖 SwiftTerm 内部 API
+  - `import SwiftTerm` 会导致 SwiftUI.Color 和 SwiftTerm.Color 类型冲突，需要 `SwiftUI.Color` 消歧
   - scroll(toPosition:) 接受 0.0-1.0 范围的 Double
   - SearchService 在 SwiftTerm 中只是空壳，不可用
 ---

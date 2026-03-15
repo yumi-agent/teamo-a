@@ -7,19 +7,24 @@ struct AgentDetailView: View {
     @EnvironmentObject var sessionManager: TerminalSessionManager
     @State private var showTerminal = true
     @State private var showAssignIssue = false
+    @State private var showSearch = false
+    @State private var searchText = ""
+    @State private var searchResults: [Int] = []
+    @State private var currentMatchIndex = 0
 
     var body: some View {
         VStack(spacing: 0) {
-            // Agent Header
             agentHeader
+
+            if showSearch {
+                terminalSearchBar
+            }
 
             Divider()
 
             if showTerminal {
-                // Terminal view — session persists via TerminalSessionManager
                 TerminalContainerView(agent: agent)
             } else {
-                // Info view
                 agentInfoView
             }
         }
@@ -28,7 +33,6 @@ struct AgentDetailView: View {
 
     private var agentHeader: some View {
         HStack(spacing: 12) {
-            // Agent icon
             Image(systemName: agent.iconName)
                 .font(.system(size: 28))
                 .foregroundColor(.secondary)
@@ -45,7 +49,6 @@ struct AgentDetailView: View {
 
             Spacer()
 
-            // Action buttons
             HStack(spacing: 8) {
                 Button(action: { showAssignIssue = true }) {
                     Label("Assign Issue", systemImage: "plus.circle")
@@ -74,7 +77,18 @@ struct AgentDetailView: View {
                     .tint(.green)
                 }
 
-                // State badge
+                Button(action: {
+                    showSearch.toggle()
+                    if !showSearch {
+                        searchText = ""
+                        searchResults = []
+                        currentMatchIndex = 0
+                    }
+                }) {
+                    Image(systemName: showSearch ? "xmark" : "magnifyingglass")
+                }
+                .buttonStyle(.bordered)
+
                 AgentStateBadge(state: agent.state)
             }
         }
@@ -86,10 +100,48 @@ struct AgentDetailView: View {
         }
     }
 
+    private var terminalSearchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+                .font(.system(size: 12))
+
+            TextField("Search terminal output...", text: $searchText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .onSubmit { performSearch() }
+                .onChange(of: searchText) { _ in performSearch() }
+
+            if !searchResults.isEmpty {
+                Text("\(currentMatchIndex + 1)/\(searchResults.count)")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.secondary)
+
+                Button(action: { navigateMatch(direction: -1) }) {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+
+                Button(action: { navigateMatch(direction: 1) }) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+            } else if !searchText.isEmpty {
+                Text("No matches")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+        .background(Color(nsColor: .controlBackgroundColor))
+    }
+
     private var agentInfoView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Latest Run
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Latest Run")
@@ -133,7 +185,6 @@ struct AgentDetailView: View {
                     }
                 }
 
-                // Stats
                 HStack(spacing: 16) {
                     AgentStatCard(title: "Assigned Issues", value: "\(store.issuesForAgent(agent.id).count)", color: .blue)
                     AgentStatCard(title: "Completed", value: "\(store.issuesForAgent(agent.id).filter { $0.status == .done }.count)", color: .green)
@@ -141,7 +192,6 @@ struct AgentDetailView: View {
                     AgentStatCard(title: "Blocked", value: "\(store.issuesForAgent(agent.id).filter { $0.status == .blocked }.count)", color: .red)
                 }
 
-                // Assigned Issues
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Assigned Issues")
                         .font(.headline)
@@ -183,6 +233,41 @@ struct AgentDetailView: View {
         }
     }
 
+    private func performSearch() {
+        guard !searchText.isEmpty else {
+            searchResults = []
+            currentMatchIndex = 0
+            return
+        }
+
+        let session = sessionManager.session(
+            for: agent, store: store,
+            notificationService: notificationService
+        )
+        let lines = session.controller.outputLines
+        let query = searchText.lowercased()
+        var matches: [Int] = []
+
+        for (index, line) in lines.enumerated() {
+            if line.lowercased().contains(query) {
+                matches.append(index)
+            }
+        }
+
+        searchResults = matches
+        if matches.isEmpty {
+            currentMatchIndex = 0
+        } else {
+            // Jump to last match (most recent)
+            currentMatchIndex = matches.count - 1
+        }
+    }
+
+    private func navigateMatch(direction: Int) {
+        guard !searchResults.isEmpty else { return }
+        currentMatchIndex = (currentMatchIndex + direction + searchResults.count) % searchResults.count
+    }
+
     private func invokeAgent() {
         showTerminal.toggle()
         if showTerminal && agent.state != .running {
@@ -195,11 +280,8 @@ struct AgentDetailView: View {
     }
 
     private func restartAgent() {
-        // Destroy old session and create fresh one
         sessionManager.destroySession(for: agent.id)
         store.updateAgentState(agent, to: .idle)
-        // The new session will be created automatically by TerminalContainerView
-        // when it calls sessionManager.session(for:store:notificationService:)
         showTerminal = true
     }
 }
@@ -227,7 +309,7 @@ struct AgentStateBadge: View {
 struct AgentStatCard: View {
     let title: String
     let value: String
-    let color: Color
+    let color: SwiftUI.Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {

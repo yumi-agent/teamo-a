@@ -266,7 +266,7 @@
       ],
       "priority": 18,
       "passes": true,
-      "notes": "Search bar in TerminalContainerView. Uses getScrollInvariantLine to scan buffer, up/down navigation, scroll to match via scroll(toPosition:)."
+      "notes": "Search button in AgentDetailView header toggles search bar. Uses controller.outputLines (accumulated ANSI-cleaned text). Up/down navigation between matches."
     },
     {
       "id": "US-019",
