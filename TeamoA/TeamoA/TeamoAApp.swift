@@ -15,6 +15,12 @@ struct TeamoAApp: App {
                 .frame(minWidth: 960, minHeight: 640)
                 .onAppear {
                     notificationService.requestPermission()
+                    // Navigate to workbench if requested (works with or without --auto-setup)
+                    if CommandLine.arguments.contains("--workbench") && store.hasWorkspace && !CommandLine.arguments.contains("--auto-setup") {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            NotificationCenter.default.post(name: .navigateToWorkbench, object: nil)
+                        }
+                    }
                     // Auto-setup for testing: --auto-setup creates workspace + agents
                     // --agents N controls how many agents to create (default 1)
                     if CommandLine.arguments.contains("--auto-setup") && !store.hasWorkspace {

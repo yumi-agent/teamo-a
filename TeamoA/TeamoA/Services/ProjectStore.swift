@@ -11,6 +11,32 @@ class ProjectStore: ObservableObject {
 
     private var nextIssueNumber = 1
 
+    // MARK: - Persistence
+
+    private static let dataDir: URL = {
+        let dir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/TeamoA")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }()
+
+    private static let encoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.outputFormatting = [.prettyPrinted, .sortedKeys]
+        e.dateEncodingStrategy = .iso8601
+        return e
+    }()
+
+    private static let decoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
+
+    init() {
+        loadAll()
+    }
+
     var hasWorkspace: Bool {
         !workspaces.isEmpty
     }
@@ -78,6 +104,7 @@ class ProjectStore: ObservableObject {
         )
         workspaces.append(ws)
         currentWorkspaceId = ws.id
+        saveWorkspaces()
     }
 
     func switchWorkspace(_ id: UUID) {
@@ -100,6 +127,7 @@ class ProjectStore: ObservableObject {
             workingDirectory: workingDirectory
         )
         agents.append(agent)
+        saveAgents()
         addActivity(agentName: name, action: "joined the workspace")
 
         // Create a linked goal if provided
@@ -110,6 +138,7 @@ class ProjectStore: ObservableObject {
                 description: "Goal assigned to \(name)"
             )
             goals.append(goal)
+            saveGoals()
             addActivity(action: "created goal", detail: desc)
         }
 
@@ -136,6 +165,7 @@ class ProjectStore: ObservableObject {
 
     func addGoal(_ goal: Goal) {
         goals.append(goal)
+        saveGoals()
         addActivity(action: "created goal", detail: goal.title)
     }
 
@@ -153,12 +183,14 @@ class ProjectStore: ObservableObject {
         )
         nextIssueNumber += 1
         issues.append(issue)
+        saveIssues()
         addActivity(action: "created issue", detail: issue.issueTag + " " + title)
     }
 
     func updateIssueStatus(_ issue: Issue, to status: IssueStatus) {
         issue.status = status
         issue.updatedAt = Date()
+        saveIssues()
         addActivity(action: "changed status to \(status.displayName.lowercased())", detail: issue.issueTag, issueTag: issue.issueTag)
         objectWillChange.send()
     }
@@ -167,6 +199,7 @@ class ProjectStore: ObservableObject {
         issue.assigneeId = agent.id
         issue.assigneeName = agent.name
         issue.updatedAt = Date()
+        saveIssues()
         addActivity(agentName: agent.name, action: "was assigned", detail: issue.issueTag, issueTag: issue.issueTag)
         objectWillChange.send()
     }
@@ -174,6 +207,7 @@ class ProjectStore: ObservableObject {
     func updateAgentState(_ agent: Agent, to state: AgentState) {
         agent.state = state
         agent.lastActivityAt = Date()
+        saveAgents()
         addActivity(agentName: agent.name, action: "state changed to \(state.displayName.lowercased())")
         objectWillChange.send()
     }
@@ -202,6 +236,77 @@ class ProjectStore: ObservableObject {
             issueTag: issueTag
         )
         activities.append(event)
+        saveActivities()
         objectWillChange.send()
+    }
+
+    // MARK: - Save
+
+    private func saveWorkspaces() {
+        save(workspaces, to: "workspaces.json")
+        // Also persist currentWorkspaceId
+        if let wid = currentWorkspaceId {
+            save(wid, to: "current_workspace_id.json")
+        }
+    }
+
+    private func saveAgents() {
+        save(agents, to: "agents.json")
+    }
+
+    private func saveGoals() {
+        save(goals, to: "goals.json")
+    }
+
+    private func saveIssues() {
+        save(issues, to: "issues.json")
+        // Persist nextIssueNumber
+        save(nextIssueNumber, to: "next_issue_number.json")
+    }
+
+    private func saveActivities() {
+        // Keep only last 1000
+        if activities.count > 1000 {
+            activities = Array(activities.suffix(1000))
+        }
+        save(activities, to: "activities.json")
+    }
+
+    private func save<T: Encodable>(_ value: T, to filename: String) {
+        let url = Self.dataDir.appendingPathComponent(filename)
+        do {
+            let data = try Self.encoder.encode(value)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            print("[ProjectStore] Failed to save \(filename): \(error)")
+        }
+    }
+
+    // MARK: - Load
+
+    private func loadAll() {
+        workspaces = load("workspaces.json") ?? []
+        currentWorkspaceId = load("current_workspace_id.json")
+        agents = load("agents.json") ?? []
+        goals = load("goals.json") ?? []
+        issues = load("issues.json") ?? []
+        activities = load("activities.json") ?? []
+        nextIssueNumber = load("next_issue_number.json") ?? 1
+
+        // Reset agent states to idle on launch (PTY sessions don't survive restart)
+        for agent in agents {
+            agent.state = .stopped
+        }
+    }
+
+    private func load<T: Decodable>(_ filename: String) -> T? {
+        let url = Self.dataDir.appendingPathComponent(filename)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        do {
+            return try Self.decoder.decode(T.self, from: data)
+        } catch {
+            print("[ProjectStore] Failed to load \(filename): \(error)")
+            return nil
+        }
     }
 }
