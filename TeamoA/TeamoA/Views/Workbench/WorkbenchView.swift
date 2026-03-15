@@ -226,21 +226,30 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
 
     private func embedTerminalView(in container: NSView) {
         let tv = getOrCreateTerminalView()
-        tv.removeFromSuperview()
-        tv.autoresizingMask = [.width, .height]
-        container.addSubview(tv)
 
-        DispatchQueue.main.async {
+        // Remove stale subviews first
+        for sub in container.subviews where sub !== tv {
+            sub.removeFromSuperview()
+        }
+        tv.removeFromSuperview()
+
+        // Use Auto Layout for reliable sizing
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(tv)
+        NSLayoutConstraint.activate([
+            tv.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            tv.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            tv.topAnchor.constraint(equalTo: container.topAnchor),
+            tv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            container.layoutSubtreeIfNeeded()
             if container.bounds.width > 0 && container.bounds.height > 0 {
-                var frame = container.bounds
-                frame.size.width -= 1
-                tv.frame = frame
-                frame.size.width += 1
-                tv.frame = frame
+                let terminal = tv.getTerminal()
+                terminal.refresh(startRow: 0, endRow: max(0, terminal.rows - 1))
+                tv.needsDisplay = true
             }
-            let terminal = tv.getTerminal()
-            terminal.refresh(startRow: 0, endRow: max(0, terminal.rows - 1))
-            tv.needsDisplay = true
         }
     }
 
@@ -254,6 +263,13 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
         tv.nativeForegroundColor = .white
         tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
         tv.terminalDelegate = session.controller
+
+        // Hide the built-in NSScroller
+        for subview in tv.subviews {
+            if let scroller = subview as? NSScroller {
+                scroller.isHidden = true
+            }
+        }
 
         session.cachedTerminalView = tv
         session.controller.terminalView = tv

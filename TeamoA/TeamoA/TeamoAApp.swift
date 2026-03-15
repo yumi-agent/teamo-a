@@ -5,6 +5,7 @@ struct TeamoAApp: App {
     @StateObject private var store = ProjectStore()
     @StateObject private var notificationService = NotificationService()
     @StateObject private var sessionManager = TerminalSessionManager()
+    @StateObject private var sessionScanner = ExternalSessionScanner()
 
     var body: some Scene {
         WindowGroup {
@@ -12,9 +13,11 @@ struct TeamoAApp: App {
                 .environmentObject(store)
                 .environmentObject(notificationService)
                 .environmentObject(sessionManager)
+                .environmentObject(sessionScanner)
                 .frame(minWidth: 960, minHeight: 640)
                 .onAppear {
                     notificationService.requestPermission()
+                    sessionScanner.startMonitoring()
                     // Navigate to workbench if requested (works with or without --auto-setup)
                     if CommandLine.arguments.contains("--workbench") && store.hasWorkspace && !CommandLine.arguments.contains("--auto-setup") {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

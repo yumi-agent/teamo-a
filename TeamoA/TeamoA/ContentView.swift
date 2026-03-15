@@ -7,6 +7,7 @@ enum NavigationItem: Hashable {
     case issues
     case settings
     case agent(UUID)
+    case externalSession(String) // session id
 }
 
 struct ContentView: View {
@@ -64,6 +65,8 @@ struct MainView: View {
                 Text("Agent not found")
                     .foregroundColor(.secondary)
             }
+        case .externalSession(let sessionId):
+            ExternalSessionDetailView(sessionId: sessionId)
         }
     }
 }

@@ -24,6 +24,7 @@ struct AgentDetailView: View {
 
             if showTerminal {
                 TerminalContainerView(agent: agent)
+                    .id(agent.id) // Force full view recreation when agent changes
             } else {
                 agentInfoView
             }

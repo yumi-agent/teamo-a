@@ -3,6 +3,7 @@ import SwiftUI
 struct SidebarView: View {
     @EnvironmentObject var store: ProjectStore
     @EnvironmentObject var sessionManager: TerminalSessionManager
+    @EnvironmentObject var sessionScanner: ExternalSessionScanner
     @Binding var selectedItem: NavigationItem?
     @State private var showCreateAgent = false
     @State private var agentToDelete: Agent?
@@ -109,6 +110,16 @@ struct SidebarView: View {
                                 }) {
                                     Label("Delete Agent", systemImage: "trash")
                                 }
+                            }
+                        }
+                    }
+                }
+
+                if !sessionScanner.sessions.isEmpty {
+                    Section("LOCAL SESSIONS") {
+                        ForEach(sessionScanner.sessions) { session in
+                            NavigationLink(value: NavigationItem.externalSession(session.id)) {
+                                ExternalSessionSidebarRow(session: session)
                             }
                         }
                     }
@@ -363,5 +374,38 @@ struct CreateAgentView: View {
         }
 
         dismiss()
+    }
+}
+
+// MARK: - External Session Sidebar Row
+
+struct ExternalSessionSidebarRow: View {
+    let session: DiscoveredSession
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "terminal")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(session.displayName)
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                if !session.firstPrompt.isEmpty {
+                    Text(session.shortPrompt)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            Circle()
+                .fill(session.status.color)
+                .frame(width: 8, height: 8)
+        }
     }
 }

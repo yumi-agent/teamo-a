@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject var store: ProjectStore
+    @EnvironmentObject var sessionScanner: ExternalSessionScanner
     @State private var showCreateAgent = false
 
     var body: some View {
@@ -95,6 +96,72 @@ struct DashboardView: View {
                     icon: "clock.badge.checkmark",
                     color: .purple
                 )
+            }
+
+            // Local Claude Code Sessions
+            if !sessionScanner.sessions.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("LOCAL SESSIONS")
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        let liveCount = sessionScanner.sessions.filter { $0.status == .live }.count
+                        let pausedCount = sessionScanner.sessions.filter { $0.status == .paused }.count
+                        if liveCount > 0 {
+                            HStack(spacing: 4) {
+                                Circle().fill(.green).frame(width: 6, height: 6)
+                                Text("\(liveCount) live")
+                                    .font(.caption2)
+                                    .foregroundColor(.green)
+                            }
+                        }
+                        if pausedCount > 0 {
+                            HStack(spacing: 4) {
+                                Circle().fill(.yellow).frame(width: 6, height: 6)
+                                Text("\(pausedCount) paused")
+                                    .font(.caption2)
+                                    .foregroundColor(.yellow)
+                            }
+                        }
+                        Text("\(sessionScanner.sessions.count) total")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+
+                    ForEach(sessionScanner.sessions.prefix(6)) { session in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(session.status.color)
+                                .frame(width: 8, height: 8)
+                            Text(session.displayName)
+                                .font(.system(size: 13, weight: .medium))
+                            if !session.gitBranch.isEmpty {
+                                Text(session.gitBranch)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Capsule().fill(.secondary.opacity(0.1)))
+                            }
+                            Spacer()
+                            if !session.shortPrompt.isEmpty {
+                                Text(session.shortPrompt)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                    .frame(maxWidth: 300, alignment: .trailing)
+                            }
+                            Text(session.status.displayName.lowercased())
+                                .font(.caption2.bold())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Capsule().fill(session.status.color.opacity(0.15)))
+                                .foregroundColor(session.status.color)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
             }
 
             // Two columns: Recent Activity + Recent Issues
