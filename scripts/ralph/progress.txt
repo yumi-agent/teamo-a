@@ -1,0 +1,28 @@
+# Ralph Progress Log
+Started: 2025-03-15
+---
+
+## Codebase Patterns
+- Use ObservableObject + @Published, NOT @Observable (macOS 13 target)
+- Bundle ID is com.teamolab.teamoa (for defaults write in E2E tests)
+- PTY uses openpty() + posix_spawn, NOT forkpty()
+- TerminalView is cached in TerminalSessionManager, reused across navigation
+- Agent state detection: ANSI cleaning → regex matching → timer-based idle
+- E2E tests: set defaults BEFORE launching app, use --auto-setup CLI flag
+- All new files must be added to TeamoA.xcodeproj/project.pbxproj
+- Developer ID signing: Yumi Zhang SK8V5TAN28
+- Data directory: ~/Library/Application Support/TeamoA/
+- AgentEngine.launchCommand contains the CLI command to start each engine
+
+---
+
+## 2025-03-15 - US-001 through US-013 (Pre-Ralph)
+- All 13 stories implemented before Ralph Loop adoption
+- Key commits: e9bd5b5 (workspace + terminal), e90e732 (goals/issues redesign),
+  50e9a40 (session persistence), e61f1bf (workbench + sidebar fix), 0d5be0e (E2E infra)
+- **Key learnings:**
+  - defaults write bundle ID must match Info.plist CFBundleIdentifier
+  - defaults must be set BEFORE app launch for @AppStorage to pick up
+  - AppleScript coordinate clicking is unreliable for SwiftUI; use CLI flags instead
+  - Terminal resize trick: ±1px frame change forces SwiftTerm redraw
+---

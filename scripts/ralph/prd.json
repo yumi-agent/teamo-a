@@ -1,0 +1,301 @@
+{
+  "project": "TeamoA",
+  "branchName": "ralph/mvp-completion",
+  "description": "Teamo A MVP — Complete remaining features: data persistence, agent lifecycle, settings, search, batch ops",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Workspace Onboarding",
+      "description": "As a new user, I want to create a workspace so I have a place to manage my agents.",
+      "acceptanceCriteria": [
+        "Welcome page with Personal/Team selection",
+        "Name input and workspace creation",
+        "Build passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Completed in commit e9bd5b5"
+    },
+    {
+      "id": "US-002",
+      "title": "Sidebar navigation structure",
+      "description": "As a user, I want a clean sidebar with Dashboard, Workbench, Issues, Goals as top-level items.",
+      "acceptanceCriteria": [
+        "Dashboard/Workbench/Issues/Goals flat top-level",
+        "AGENTS section with agent list",
+        "No WORK group",
+        "Build passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Completed in commit e61f1bf"
+    },
+    {
+      "id": "US-003",
+      "title": "Agent creation page",
+      "description": "As a user, I want to create an agent with engine, role, goal, and working directory.",
+      "acceptanceCriteria": [
+        "Engine picker: Claude Code and Codex only",
+        "Role marked optional",
+        "Goal as multi-line TextEditor",
+        "Working directory selector with NSOpenPanel",
+        "Build passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Completed in commit e61f1bf"
+    },
+    {
+      "id": "US-004",
+      "title": "PTY terminal integration",
+      "description": "As a user, I want each agent to have a real terminal running the AI engine.",
+      "acceptanceCriteria": [
+        "openpty() + posix_spawn launches /bin/zsh --login",
+        "Auto-executes engine command",
+        "Full VT100/Xterm/ANSI support",
+        "Resize support",
+        "Build passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Completed in commit e9bd5b5, rewritten in 50e9a40"
+    },
+    {
+      "id": "US-005",
+      "title": "Terminal session persistence across navigation",
+      "description": "As a user, I want terminal content preserved when navigating away and back.",
+      "acceptanceCriteria": [
+        "TerminalSessionManager caches TerminalView at app level",
+        "Navigation away and back preserves content",
+        "Workbench and AgentDetail share same TerminalView",
+        "Build passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Completed in commit 50e9a40"
+    },
+    {
+      "id": "US-006",
+      "title": "Agent state auto-detection",
+      "description": "As a user, I want to see each agent's state automatically detected.",
+      "acceptanceCriteria": [
+        "ANSI cleaning + regex matching for waiting patterns",
+        "3s silence → idle",
+        "Process exit → stopped",
+        "Decoration lines don't trigger false positives",
+        "Build passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Completed in commits 5c33245, f83ec3b"
+    },
+    {
+      "id": "US-007",
+      "title": "macOS notifications",
+      "description": "As a user, I want notifications when agent state changes.",
+      "acceptanceCriteria": [
+        "Running→Waiting triggers notification",
+        "Process exit triggers notification",
+        "Click notification navigates to agent",
+        "Build passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Completed in commit e9bd5b5"
+    },
+    {
+      "id": "US-008",
+      "title": "Dashboard overview",
+      "description": "As a user, I want a dashboard with key metrics and recent activity.",
+      "acceptanceCriteria": [
+        "4 StatCards showing agent/issue/goal/approval counts",
+        "Recent activity feed",
+        "Recent issues list",
+        "Build passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Completed in commit e90e732"
+    },
+    {
+      "id": "US-009",
+      "title": "Workbench multi-terminal view",
+      "description": "As a user, I want to see all agent terminals simultaneously in a configurable grid.",
+      "acceptanceCriteria": [
+        "LazyVGrid supports 1-4 columns",
+        "Terminal height 25/50/75/100% selectable",
+        "Empty state for 0 agents",
+        "Single agent fills full width",
+        "Settings gear icon with popover",
+        "Build passes",
+        "All 13 E2E test cases pass"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Completed in commit e61f1bf, tested in 0d5be0e"
+    },
+    {
+      "id": "US-010",
+      "title": "Goals management",
+      "description": "As a user, I want to create and track goals with status and progress.",
+      "acceptanceCriteria": [
+        "3 status groups",
+        "Progress bar",
+        "Associated issues count",
+        "Create goal modal",
+        "Build passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Completed in commit e90e732"
+    },
+    {
+      "id": "US-011",
+      "title": "Issues management",
+      "description": "As a user, I want to manage issues with priorities and status tracking.",
+      "acceptanceCriteria": [
+        "4-status kanban layout",
+        "Priority color coding",
+        "Issue detail sheet",
+        "Status change buttons",
+        "Create issue with goal association",
+        "Build passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "Completed in commit e90e732"
+    },
+    {
+      "id": "US-012",
+      "title": "Auto-send initial goal",
+      "description": "As a user, I want the agent to automatically receive its initial goal when ready.",
+      "acceptanceCriteria": [
+        "Send goal when state becomes waiting",
+        "8s timer fallback",
+        "Build passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "Completed in commits 3c2278f, f83ec3b"
+    },
+    {
+      "id": "US-013",
+      "title": "E2E test infrastructure",
+      "description": "As a developer, I need CLI flags for automated E2E testing.",
+      "acceptanceCriteria": [
+        "--auto-setup creates workspace + agents",
+        "--agents N controls agent count",
+        "--workbench auto-navigates to Workbench",
+        "--test-nav-persistence tests navigation persistence",
+        "Build passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Completed in commit 0d5be0e"
+    },
+    {
+      "id": "US-014",
+      "title": "Data persistence — Workspace and Agents",
+      "description": "As a user, I want my workspace and agents to persist across app restarts.",
+      "acceptanceCriteria": [
+        "Workspace data saved to ~/Library/Application Support/TeamoA/workspaces.json",
+        "Agent data saved to ~/Library/Application Support/TeamoA/agents.json",
+        "Auto-load on app startup",
+        "Real-time save on create/modify/delete",
+        "Build passes",
+        "E2E: create workspace + agent, quit app, relaunch, data preserved"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Data persistence — Goals and Issues",
+      "description": "As a user, I want my goals and issues to persist across app restarts.",
+      "acceptanceCriteria": [
+        "Goals saved to ~/Library/Application Support/TeamoA/goals.json",
+        "Issues saved to ~/Library/Application Support/TeamoA/issues.json",
+        "Associations (issue→goal, issue→agent) correctly restored",
+        "Build passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Agent lifecycle — Restart and Delete",
+      "description": "As a user, I want to restart a stopped agent or delete an agent entirely.",
+      "acceptanceCriteria": [
+        "Restart button visible only when agent is stopped",
+        "Restart closes old PTY, creates new session, relaunches engine",
+        "Context menu on sidebar agent row has Delete option",
+        "Delete shows confirmation dialog",
+        "Delete terminates PTY, cleans session, removes from list",
+        "Build passes",
+        "E2E: create agent → stop → restart → verify terminal works"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Settings view",
+      "description": "As a user, I want a settings page for app-level configuration.",
+      "acceptanceCriteria": [
+        "Settings entry in sidebar bottom or menu bar",
+        "Settings: default engine, default working directory, notification toggle",
+        "Settings saved to UserDefaults",
+        "Build passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Terminal output search",
+      "description": "As a user, I want to search within a terminal's output.",
+      "acceptanceCriteria": [
+        "Search icon in Agent Detail expands search bar",
+        "Input keyword highlights matching lines",
+        "Up/down navigation between matches",
+        "Build passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Agent batch operations",
+      "description": "As a user, I want to start/stop all agents at once from the Workbench.",
+      "acceptanceCriteria": [
+        "Workbench header has Start All / Stop All buttons",
+        "Start All launches all stopped agents",
+        "Stop All terminates all running agents",
+        "Buttons shown/hidden based on current state",
+        "Build passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Activity log persistence",
+      "description": "As a user, I want activity history preserved across app sessions.",
+      "acceptanceCriteria": [
+        "ActivityEvents saved to ~/Library/Application Support/TeamoA/activities.jsonl (append)",
+        "Max 1000 recent entries retained",
+        "Load on app startup",
+        "Build passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
