@@ -4,6 +4,7 @@ struct AgentDetailView: View {
     @ObservedObject var agent: Agent
     @EnvironmentObject var store: ProjectStore
     @EnvironmentObject var notificationService: NotificationService
+    @EnvironmentObject var sessionManager: TerminalSessionManager
     @State private var showTerminal = true
     @State private var showAssignIssue = false
 
@@ -63,6 +64,14 @@ struct AgentDetailView: View {
                     }
                     .buttonStyle(.bordered)
                     .tint(.orange)
+                }
+
+                if agent.state == .stopped {
+                    Button(action: restartAgent) {
+                        Label("Restart", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.green)
                 }
 
                 // State badge
@@ -183,6 +192,15 @@ struct AgentDetailView: View {
 
     private func pauseAgent() {
         store.updateAgentState(agent, to: .paused)
+    }
+
+    private func restartAgent() {
+        // Destroy old session and create fresh one
+        sessionManager.destroySession(for: agent.id)
+        store.updateAgentState(agent, to: .idle)
+        // The new session will be created automatically by TerminalContainerView
+        // when it calls sessionManager.session(for:store:notificationService:)
+        showTerminal = true
     }
 }
 

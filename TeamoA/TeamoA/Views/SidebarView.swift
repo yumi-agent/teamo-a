@@ -2,8 +2,10 @@ import SwiftUI
 
 struct SidebarView: View {
     @EnvironmentObject var store: ProjectStore
+    @EnvironmentObject var sessionManager: TerminalSessionManager
     @Binding var selectedItem: NavigationItem?
     @State private var showCreateAgent = false
+    @State private var agentToDelete: Agent?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -97,6 +99,13 @@ struct SidebarView: View {
                             NavigationLink(value: NavigationItem.agent(agent.id)) {
                                 AgentSidebarRow(agent: agent)
                             }
+                            .contextMenu {
+                                Button(role: .destructive, action: {
+                                    agentToDelete = agent
+                                }) {
+                                    Label("Delete Agent", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                 }
@@ -114,6 +123,26 @@ struct SidebarView: View {
         .sheet(isPresented: $showCreateAgent) {
             CreateAgentView { agentId in
                 selectedItem = .agent(agentId)
+            }
+        }
+        .alert("Delete Agent", isPresented: Binding(
+            get: { agentToDelete != nil },
+            set: { if !$0 { agentToDelete = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { agentToDelete = nil }
+            Button("Delete", role: .destructive) {
+                if let agent = agentToDelete {
+                    sessionManager.destroySession(for: agent.id)
+                    store.deleteAgent(agent)
+                    if selectedItem == .agent(agent.id) {
+                        selectedItem = .dashboard
+                    }
+                    agentToDelete = nil
+                }
+            }
+        } message: {
+            if let agent = agentToDelete {
+                Text("Are you sure you want to delete \"\(agent.name)\"? This will terminate any running process and cannot be undone.")
             }
         }
     }

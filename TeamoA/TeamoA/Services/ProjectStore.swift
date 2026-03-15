@@ -216,6 +216,12 @@ class ProjectStore: ObservableObject {
         agents.first { $0.id == id }
     }
 
+    func deleteAgent(_ agent: Agent) {
+        agents.removeAll { $0.id == agent.id }
+        saveAgents()
+        addActivity(agentName: agent.name, action: "was removed from workspace")
+    }
+
     func issuesForAgent(_ agentId: UUID) -> [Issue] {
         currentIssues.filter { $0.assigneeId == agentId }
     }
