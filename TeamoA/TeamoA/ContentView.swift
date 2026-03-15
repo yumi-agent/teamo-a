@@ -38,6 +38,9 @@ struct MainView: View {
                 selectedItem = .agent(id)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToWorkbench)) { _ in
+            selectedItem = .workbench
+        }
     }
 
     @ViewBuilder
@@ -221,4 +224,5 @@ struct WorkspaceTypeCard: View {
 
 extension Notification.Name {
     static let navigateToAgent = Notification.Name("navigateToAgent")
+    static let navigateToWorkbench = Notification.Name("navigateToWorkbench")
 }
