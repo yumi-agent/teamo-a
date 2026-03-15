@@ -2,6 +2,7 @@ import SwiftUI
 
 enum NavigationItem: Hashable {
     case dashboard
+    case workbench
     case goals
     case issues
     case agent(UUID)
@@ -44,6 +45,8 @@ struct MainView: View {
         switch selectedItem {
         case .dashboard, .none:
             DashboardView()
+        case .workbench:
+            WorkbenchView()
         case .goals:
             GoalsListView()
         case .issues:

@@ -126,7 +126,7 @@ class TerminalController: NSObject, ObservableObject {
 
     func startSession() {
         guard let agent = agent else { return }
-        let workDir = store?.currentWorkspace?.workingDirectory ?? NSHomeDirectory()
+        let workDir = agent.workingDirectory
 
         do {
             try ptyManager.start(

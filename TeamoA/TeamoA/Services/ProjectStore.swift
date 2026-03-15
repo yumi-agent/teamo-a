@@ -86,7 +86,7 @@ class ProjectStore: ObservableObject {
 
     // MARK: - Agent
 
-    func createAgent(name: String, role: String, engine: AgentEngine, goalDescription: String?) {
+    func createAgent(name: String, role: String, engine: AgentEngine, goalDescription: String?, workingDirectory: String = NSHomeDirectory()) {
         guard let wid = currentWorkspaceId else { return }
 
         let goalDesc = goalDescription?.trimmingCharacters(in: .whitespaces)
@@ -96,7 +96,8 @@ class ProjectStore: ObservableObject {
             role: role,
             engine: engine,
             iconName: iconForRole(role),
-            goalDescription: (goalDesc?.isEmpty == false) ? goalDesc : nil
+            goalDescription: (goalDesc?.isEmpty == false) ? goalDesc : nil,
+            workingDirectory: workingDirectory
         )
         agents.append(agent)
         addActivity(agentName: name, action: "joined the workspace")

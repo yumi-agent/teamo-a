@@ -31,39 +31,52 @@ struct SidebarView: View {
                     }
                 }
 
-                Section("WORK") {
-                    NavigationLink(value: NavigationItem.issues) {
-                        Label {
-                            HStack {
-                                Text("Issues")
-                                Spacer()
-                                if store.openIssuesCount > 0 {
-                                    Text("\(store.openIssuesCount)")
-                                        .font(.caption2)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Capsule().fill(.secondary.opacity(0.2)))
-                                }
-                            }
-                        } icon: {
-                            Image(systemName: "circle.dotted")
+                NavigationLink(value: NavigationItem.workbench) {
+                    HStack {
+                        Label("Workbench", systemImage: "rectangle.split.2x2")
+                        Spacer()
+                        if store.runningAgentsCount > 0 {
+                            Text("\(store.runningAgentsCount)")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(.green.opacity(0.2)))
+                                .foregroundColor(.green)
                         }
                     }
+                }
 
-                    NavigationLink(value: NavigationItem.goals) {
-                        Label {
-                            HStack {
-                                Text("Goals")
-                                Spacer()
-                                if store.goalsTotalCount > 0 {
-                                    Text("\(store.goalsCompletedCount)/\(store.goalsTotalCount)")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
+                NavigationLink(value: NavigationItem.issues) {
+                    Label {
+                        HStack {
+                            Text("Issues")
+                            Spacer()
+                            if store.openIssuesCount > 0 {
+                                Text("\(store.openIssuesCount)")
+                                    .font(.caption2)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Capsule().fill(.secondary.opacity(0.2)))
                             }
-                        } icon: {
-                            Image(systemName: "target")
                         }
+                    } icon: {
+                        Image(systemName: "circle.dotted")
+                    }
+                }
+
+                NavigationLink(value: NavigationItem.goals) {
+                    Label {
+                        HStack {
+                            Text("Goals")
+                            Spacer()
+                            if store.goalsTotalCount > 0 {
+                                Text("\(store.goalsCompletedCount)/\(store.goalsTotalCount)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    } icon: {
+                        Image(systemName: "target")
                     }
                 }
 
@@ -165,6 +178,7 @@ struct CreateAgentView: View {
     @State private var role = ""
     @State private var engine: AgentEngine = .claudeCode
     @State private var goalDescription = ""
+    @State private var workingDirectory = NSHomeDirectory()
 
     var onCreated: ((UUID) -> Void)?
 
@@ -173,7 +187,7 @@ struct CreateAgentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             // Header
             VStack(spacing: 6) {
                 Image(systemName: "person.badge.plus")
@@ -191,34 +205,73 @@ struct CreateAgentView: View {
                 TextField("Agent Name", text: $name)
                     .textFieldStyle(.roundedBorder)
 
-                // Role
-                TextField("Role (e.g. Frontend Engineer)", text: $role)
-                    .textFieldStyle(.roundedBorder)
-
-                // Engine
-                Picker("Engine", selection: $engine) {
-                    ForEach(AgentEngine.allCases) { eng in
-                        HStack {
-                            Image(systemName: eng.iconName)
-                            Text(eng.displayName)
-                        }
-                        .tag(eng)
+                // Role (optional)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text("Role")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("(optional)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
+                    TextField("e.g. Frontend Engineer", text: $role)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                // Engine — only Claude Code and Codex
+                Picker("Engine", selection: $engine) {
+                    Text("Claude Code").tag(AgentEngine.claudeCode)
+                    Text("Codex").tag(AgentEngine.codex)
                 }
                 .pickerStyle(.segmented)
 
-                // Optional Goal
+                // Working Directory
                 VStack(alignment: .leading, spacing: 4) {
+                    Text("Working Directory")
+                        .font(.system(size: 13, weight: .medium))
                     HStack {
+                        Text(workingDirectory)
+                            .font(.system(size: 12, design: .monospaced))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color(.textBackgroundColor)))
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(.separatorColor)))
+
+                        Button("Choose...") {
+                            chooseDirectory()
+                        }
+                    }
+                }
+
+                // Goal (optional) — multi-line
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
                         Text("Goal")
                             .font(.system(size: 13, weight: .medium))
                         Text("(optional)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    TextField("What should this agent work towards?", text: $goalDescription)
-                        .textFieldStyle(.roundedBorder)
+                    TextEditor(text: $goalDescription)
                         .font(.system(size: 13))
+                        .frame(height: 80)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color(.separatorColor))
+                        )
+                        .overlay(alignment: .topLeading) {
+                            if goalDescription.isEmpty {
+                                Text("Describe what this agent should work on...")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 8)
+                                    .allowsHitTesting(false)
+                            }
+                        }
                 }
             }
             .formStyle(.grouped)
@@ -240,24 +293,35 @@ struct CreateAgentView: View {
             }
         }
         .padding(20)
-        .frame(width: 460, height: 420)
+        .frame(width: 500, height: 540)
+    }
+
+    private func chooseDirectory() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: workingDirectory)
+        panel.prompt = "Select"
+        if panel.runModal() == .OK, let url = panel.url {
+            workingDirectory = url.path
+        }
     }
 
     private func createAgent() {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else { return }
 
-        let agentRole = role.trimmingCharacters(in: .whitespaces).isEmpty
-            ? "\(engine.displayName) Agent"
-            : role.trimmingCharacters(in: .whitespaces)
+        let trimmedRole = role.trimmingCharacters(in: .whitespaces)
 
         let goalDesc = goalDescription.trimmingCharacters(in: .whitespaces)
 
         store.createAgent(
             name: trimmedName,
-            role: agentRole,
+            role: trimmedRole.isEmpty ? "" : trimmedRole,
             engine: engine,
-            goalDescription: goalDesc.isEmpty ? nil : goalDesc
+            goalDescription: goalDesc.isEmpty ? nil : goalDesc,
+            workingDirectory: workingDirectory
         )
 
         // Find the created agent to navigate to it

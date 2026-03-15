@@ -12,9 +12,10 @@ class Agent: ObservableObject, Identifiable, Codable {
     let createdAt: Date
     @Published var lastActivityAt: Date
     var goalDescription: String?
+    var workingDirectory: String
 
     enum CodingKeys: String, CodingKey {
-        case id, projectId, name, role, engine, iconName, state, createdAt, lastActivityAt, goalDescription
+        case id, projectId, name, role, engine, iconName, state, createdAt, lastActivityAt, goalDescription, workingDirectory
     }
 
     init(
@@ -26,7 +27,8 @@ class Agent: ObservableObject, Identifiable, Codable {
         iconName: String = "person.crop.circle",
         state: AgentState = .idle,
         createdAt: Date = Date(),
-        goalDescription: String? = nil
+        goalDescription: String? = nil,
+        workingDirectory: String = NSHomeDirectory()
     ) {
         self.id = id
         self.projectId = projectId
@@ -38,6 +40,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         self.createdAt = createdAt
         self.lastActivityAt = createdAt
         self.goalDescription = goalDescription
+        self.workingDirectory = workingDirectory
     }
 
     required init(from decoder: Decoder) throws {
@@ -52,6 +55,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         lastActivityAt = try c.decode(Date.self, forKey: .lastActivityAt)
         goalDescription = try c.decodeIfPresent(String.self, forKey: .goalDescription)
+        workingDirectory = try c.decodeIfPresent(String.self, forKey: .workingDirectory) ?? NSHomeDirectory()
     }
 
     func encode(to encoder: Encoder) throws {
@@ -66,6 +70,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         try c.encode(createdAt, forKey: .createdAt)
         try c.encode(lastActivityAt, forKey: .lastActivityAt)
         try c.encodeIfPresent(goalDescription, forKey: .goalDescription)
+        try c.encode(workingDirectory, forKey: .workingDirectory)
     }
 }
 
