@@ -79,3 +79,19 @@ Started: 2025-03-15
 - 已在 US-014 中一并实现：activities.json 持久化 + 1000 条上限 + 启动加载
 - 无额外代码变更
 ---
+
+## 2025-03-15 - US-018: Terminal Output Search
+- 在 TerminalContainerView 中实现搜索功能（而非 AgentDetailView，因为搜索与终端紧耦合）
+- 搜索按钮放在 InputArea 右侧，点击展开搜索栏
+- 搜索逻辑：遍历 terminal.getScrollInvariantLine(row:) 获取所有 buffer 行的文本
+- 匹配结果显示 "X/Y" 计数器，上下箭头在匹配间导航
+- 导航通过 tv.scroll(toPosition:) 滚动到匹配行附近
+- 清理了 AgentDetailView 中旧的不编译搜索代码（使用了 internal API buffer.lines）
+- Files changed: TerminalContainerView.swift (major), AgentDetailView.swift (cleanup)
+- **Learnings:**
+  - SwiftTerm 的 buffer.lines 是 internal，不能从外部访问
+  - 用 getScrollInvariantLine(row:) 从 0 开始迭代可绕过此限制
+  - translateToString(trimRight: true) 是从 BufferLine 获取文本的正确方式
+  - scroll(toPosition:) 接受 0.0-1.0 范围的 Double
+  - SearchService 在 SwiftTerm 中只是空壳，不可用
+---

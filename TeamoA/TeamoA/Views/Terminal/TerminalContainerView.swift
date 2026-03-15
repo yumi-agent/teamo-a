@@ -6,39 +6,178 @@ struct TerminalContainerView: View {
     @EnvironmentObject var store: ProjectStore
     @EnvironmentObject var notificationService: NotificationService
     @EnvironmentObject var sessionManager: TerminalSessionManager
+    @State private var showSearch = false
+    @State private var searchText = ""
+    @State private var searchMatches: [TerminalSearchMatch] = []
+    @State private var currentMatchIndex = 0
+
+    private var session: TerminalSession {
+        sessionManager.session(for: agent, store: store, notificationService: notificationService)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Search bar
+            if showSearch {
+                terminalSearchBar
+            }
+
             // Terminal — uses persistent session from manager
-            PersistentTerminalView(
-                session: sessionManager.session(
-                    for: agent, store: store,
-                    notificationService: notificationService
-                )
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            PersistentTerminalView(session: session)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             Divider()
 
             // Input area
-            InputAreaView { text in
-                sessionManager.session(
-                    for: agent, store: store,
-                    notificationService: notificationService
-                ).controller.sendInput(text)
+            HStack(spacing: 0) {
+                InputAreaView { text in
+                    session.controller.sendInput(text)
+                }
+                .frame(maxWidth: .infinity)
+
+                Button(action: { showSearch.toggle() }) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14))
+                        .foregroundColor(showSearch ? .blue : .secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 12)
+                .help("Search terminal output")
             }
         }
         .onAppear {
-            let session = sessionManager.session(
-                for: agent, store: store,
-                notificationService: notificationService
-            )
             if !session.isStarted {
                 session.isStarted = true
                 session.controller.startSession()
             }
         }
     }
+
+    private var terminalSearchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+                .font(.system(size: 12))
+
+            TextField("Search terminal output...", text: $searchText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .onSubmit { performSearch() }
+                .onChange(of: searchText) { _ in
+                    if searchText.isEmpty {
+                        searchMatches = []
+                        currentMatchIndex = 0
+                    }
+                }
+
+            if !searchMatches.isEmpty {
+                Text("\(currentMatchIndex + 1)/\(searchMatches.count)")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.secondary)
+
+                Button(action: navigatePrevious) {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .disabled(searchMatches.count <= 1)
+
+                Button(action: navigateNext) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .disabled(searchMatches.count <= 1)
+            } else if !searchText.isEmpty {
+                Text("No matches")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+
+            Button(action: {
+                showSearch = false
+                searchText = ""
+                searchMatches = []
+            }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    private func performSearch() {
+        guard !searchText.isEmpty else { return }
+        guard let tv = session.cachedTerminalView else { return }
+
+        let terminal = tv.getTerminal()
+        let keyword = searchText.lowercased()
+        var matches: [TerminalSearchMatch] = []
+
+        // Iterate through scroll-invariant lines until we get nil
+        var row = 0
+        while let line = terminal.getScrollInvariantLine(row: row) {
+            let text = line.translateToString(trimRight: true)
+            let lowerText = text.lowercased()
+            var searchStart = lowerText.startIndex
+            while let range = lowerText.range(of: keyword, range: searchStart..<lowerText.endIndex) {
+                let col = lowerText.distance(from: lowerText.startIndex, to: range.lowerBound)
+                matches.append(TerminalSearchMatch(bufferRow: row, col: col))
+                searchStart = range.upperBound
+            }
+            row += 1
+            if row > 50000 { break } // safety limit
+        }
+
+        searchMatches = matches
+        if !matches.isEmpty {
+            currentMatchIndex = max(0, matches.count - 1)
+            scrollToCurrentMatch(tv: tv)
+        }
+    }
+
+    private func navigateNext() {
+        guard !searchMatches.isEmpty else { return }
+        currentMatchIndex = (currentMatchIndex + 1) % searchMatches.count
+        if let tv = session.cachedTerminalView {
+            scrollToCurrentMatch(tv: tv)
+        }
+    }
+
+    private func navigatePrevious() {
+        guard !searchMatches.isEmpty else { return }
+        currentMatchIndex = (currentMatchIndex - 1 + searchMatches.count) % searchMatches.count
+        if let tv = session.cachedTerminalView {
+            scrollToCurrentMatch(tv: tv)
+        }
+    }
+
+    private func scrollToCurrentMatch(tv: TerminalView) {
+        let match = searchMatches[currentMatchIndex]
+        let terminal = tv.getTerminal()
+
+        // Count total lines by iterating (getScrollInvariantLine returns nil past end)
+        var totalLines = 0
+        while terminal.getScrollInvariantLine(row: totalLines) != nil {
+            totalLines += 1
+            if totalLines > 50000 { break }
+        }
+        let maxScroll = totalLines - terminal.rows
+        guard maxScroll > 0 else { return }
+
+        let targetRow = max(0, min(match.bufferRow - terminal.rows / 2, maxScroll))
+        let position = Double(targetRow) / Double(maxScroll)
+        tv.scroll(toPosition: position)
+    }
+}
+
+struct TerminalSearchMatch {
+    let bufferRow: Int
+    let col: Int
 }
 
 // MARK: - PersistentTerminalView

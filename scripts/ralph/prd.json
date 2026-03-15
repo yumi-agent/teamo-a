@@ -265,8 +265,8 @@
         "Build passes"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Search bar in TerminalContainerView. Uses getScrollInvariantLine to scan buffer, up/down navigation, scroll to match via scroll(toPosition:)."
     },
     {
       "id": "US-019",
