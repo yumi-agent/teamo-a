@@ -5,6 +5,7 @@ enum NavigationItem: Hashable {
     case workbench
     case goals
     case issues
+    case settings
     case agent(UUID)
 }
 
@@ -54,6 +55,8 @@ struct MainView: View {
             GoalsListView()
         case .issues:
             IssuesListView()
+        case .settings:
+            SettingsDetailView()
         case .agent(let id):
             if let agent = store.agent(byId: id) {
                 AgentDetailView(agent: agent)

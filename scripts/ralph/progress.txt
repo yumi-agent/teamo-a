@@ -26,3 +26,56 @@ Started: 2025-03-15
   - AppleScript coordinate clicking is unreliable for SwiftUI; use CLI flags instead
   - Terminal resize trick: ±1px frame change forces SwiftTerm redraw
 ---
+
+## 2025-03-15 23:30 - US-014 & US-015
+- 实现了全量数据持久化：workspaces, agents, goals, issues, activities, currentWorkspaceId, nextIssueNumber
+- 存储路径：~/Library/Application Support/TeamoA/
+- 每次增删改操作后自动写入 JSON 文件
+- App 启动时 init() 中调用 loadAll() 自动加载
+- Agent 重启后 state 重置为 .stopped（PTY 不跨进程存活）
+- Files changed: ProjectStore.swift, TeamoAApp.swift
+- **Learnings for future iterations:**
+  - JSONEncoder 需要 .iso8601 dateEncodingStrategy 来正确处理 Date 类型
+  - Agent 的 @Published 属性不影响 Codable，因为手动实现了 CodingKeys
+  - 持久化触发点在每个 mutating 方法中，不需要 Combine/debounce
+  - activities 限制 1000 条防止文件过大
+  - --workbench flag 需要独立于 --auto-setup 工作，否则重启测试无法导航
+---
+
+## 2025-03-15 - US-016: Agent Lifecycle — Restart and Delete
+- AgentDetailView: 添加 Restart 按钮（仅 stopped 状态可见），destroySession → 重建
+- SidebarView: agent 行添加 contextMenu "Delete Agent"，确认弹窗后清理 PTY + 从列表移除
+- ProjectStore: 添加 deleteAgent() 方法 + 持久化
+- Files changed: AgentDetailView.swift, SidebarView.swift, ProjectStore.swift
+- **Learnings:**
+  - SwiftUI contextMenu 中 Button(role: .destructive) 自动渲染红色
+  - .alert 需要 Binding 包装 optional state 来控制显示
+---
+
+## 2025-03-15 - US-017: Settings View
+- 新建 SettingsDetailView.swift: General（默认引擎+工作目录）、Notifications（开关）、Workbench Defaults（列数+高度）、About
+- 使用 @AppStorage 持久化，与 WorkbenchView 共享 workbench_columns 和 workbench_heightPercent
+- ContentView: 添加 NavigationItem.settings case
+- SidebarView: 添加 Settings NavigationLink
+- 手动在 project.pbxproj 中添加文件引用、Settings group、Sources build phase
+- Files changed: SettingsDetailView.swift (new), ContentView.swift, SidebarView.swift, project.pbxproj
+- **Learnings:**
+  - 新文件需要 4 处 pbxproj 修改：PBXBuildFile、PBXFileReference、PBXGroup、Sources phase
+  - @AppStorage 键名必须与其他视图中使用的一致，否则不会同步
+---
+
+## 2025-03-15 - US-019: Agent Batch Operations
+- WorkbenchView header: 添加 Start All / Stop All 按钮
+- Start All: 遍历 stopped/idle agents，创建 session 并启动
+- Stop All: 遍历 running agents，调用 controller.stopSession()
+- 按钮根据当前 agent 状态条件显示/隐藏
+- Files changed: WorkbenchView.swift
+- **Learnings:**
+  - 批量操作需要通过 sessionManager 获取每个 agent 的 session
+  - 按钮可见性用 hasStopped/hasRunning 计算属性控制
+---
+
+## 2025-03-15 - US-020: Activity Log Persistence
+- 已在 US-014 中一并实现：activities.json 持久化 + 1000 条上限 + 启动加载
+- 无额外代码变更
+---

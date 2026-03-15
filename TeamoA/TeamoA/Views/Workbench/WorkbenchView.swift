@@ -18,6 +18,32 @@ struct WorkbenchView: View {
                 Text("Workbench")
                     .font(.title2.bold())
                 Spacer()
+
+                let agents = store.currentAgents
+                let hasRunning = agents.contains { $0.state == .running }
+                let hasStopped = agents.contains { $0.state == .stopped || $0.state == .idle }
+
+                if !agents.isEmpty {
+                    if hasStopped {
+                        Button(action: startAllAgents) {
+                            Label("Start All", systemImage: "play.fill")
+                                .font(.system(size: 12))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+
+                    if hasRunning {
+                        Button(action: stopAllAgents) {
+                            Label("Stop All", systemImage: "stop.fill")
+                                .font(.system(size: 12))
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(.red)
+                    }
+                }
+
                 Button(action: { showSettings.toggle() }) {
                     Image(systemName: "gearshape")
                         .font(.system(size: 16))
@@ -91,6 +117,23 @@ struct WorkbenchView: View {
             rawHeight = (usableHeight - 8) / 2  // subtract inter-row spacing
         }
         return max(rawHeight, 120)
+    }
+
+    private func startAllAgents() {
+        for agent in store.currentAgents where agent.state == .stopped || agent.state == .idle {
+            let session = sessionManager.session(for: agent, store: store, notificationService: notificationService)
+            if !session.isStarted {
+                session.isStarted = true
+                session.controller.startSession()
+            }
+        }
+    }
+
+    private func stopAllAgents() {
+        for agent in store.currentAgents where agent.state == .running {
+            let session = sessionManager.session(for: agent, store: store, notificationService: notificationService)
+            session.controller.stopSession()
+        }
     }
 
     private var emptyState: some View {

@@ -82,6 +82,10 @@ struct SidebarView: View {
                     }
                 }
 
+                NavigationLink(value: NavigationItem.settings) {
+                    Label("Settings", systemImage: "gearshape")
+                }
+
                 Section("AGENTS") {
                     if store.currentAgents.isEmpty {
                         Button(action: { showCreateAgent = true }) {
