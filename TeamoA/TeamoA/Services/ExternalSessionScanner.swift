@@ -79,74 +79,28 @@ class ExternalSessionScanner: ObservableObject {
     func refresh() {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self = self else { return }
-            let processes = self.getRunningClaudeProcesses()
+
+            // Phase 1: Quick file scan — publish immediately based on file age
             var discovered = self.scanAllSessions()
-            discovered = self.classifySessions(discovered, processes: processes)
-
-            // Sort: live first, then paused, then stopped (by mtime desc)
-            let order: [DiscoveredSession.SessionStatus: Int] = [.live: 0, .paused: 1, .stopped: 2]
-            discovered.sort {
-                let o1 = order[$0.status] ?? 3
-                let o2 = order[$1.status] ?? 3
-                if o1 != o2 { return o1 < o2 }
-                return $0.mtime > $1.mtime
-            }
-
-            // Only keep live/paused + recent stopped (last 2h), max 20 sessions
-            let cutoff = Date().addingTimeInterval(-7200)
-            discovered = discovered.filter { session in
-                session.status == .live || session.status == .paused || session.mtime > cutoff
-            }
-            if discovered.count > 20 {
-                discovered = Array(discovered.prefix(20))
-            }
-
+            discovered = self.classifyByFileAge(discovered)
+            let sorted = self.sortAndFilter(discovered)
             DispatchQueue.main.async {
-                self.sessions = discovered
+                self.sessions = sorted
+            }
+
+            // Phase 2: Process matching — update live/paused status
+            let runningPids = self.getRunningClaudePids()
+            if !runningPids.isEmpty {
+                discovered = self.classifyWithProcesses(discovered, pids: runningPids)
+                let updated = self.sortAndFilter(discovered)
+                DispatchQueue.main.async {
+                    self.sessions = updated
+                }
             }
         }
     }
 
     // MARK: - Process Discovery
-
-    private struct ClaudeProcess {
-        let pid: Int
-        let ppid: Int
-        let tty: String
-        let etime: String
-        var cwd: String?
-    }
-
-    private func getRunningClaudeProcesses() -> [ClaudeProcess] {
-        guard let output = runCommand("/bin/ps", arguments: ["-eo", "pid,ppid,tty,etime,command"]) else {
-            return []
-        }
-
-        var processes: [ClaudeProcess] = []
-        let lines = output.split(separator: "\n")
-
-        for line in lines.dropFirst() { // skip header
-            let str = String(line)
-            guard str.contains("claude") else { continue }
-            // Match both `claude` and `claude --dangerously-skip-permissions`
-            guard str.contains("--dangerously-skip-permissions") || str.contains("node") && str.contains("claude") else { continue }
-
-            let parts = str.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 4)
-            guard parts.count >= 4, let pid = Int(parts[0]), let ppid = Int(parts[1]) else { continue }
-
-            // Skip Teamo A's own agent PIDs
-            if internalPids.contains(pid) { continue }
-
-            let tty = String(parts[2])
-            let etime = String(parts[3])
-
-            var proc = ClaudeProcess(pid: pid, ppid: ppid, tty: tty, etime: etime)
-            proc.cwd = getProcessCwd(pid: pid)
-            processes.append(proc)
-        }
-
-        return processes
-    }
 
     private func getProcessCwd(pid: Int) -> String? {
         guard let output = runCommand("/usr/sbin/lsof", arguments: ["-p", String(pid)]) else {
@@ -193,14 +147,18 @@ class ExternalSessionScanner: ObservableObject {
                 projectPath = "/" + projectPath
             }
 
-            // Find JSONL files
+            // Find JSONL files — only scan recent ones (last 3h) for performance
+            let recentCutoff = Date().addingTimeInterval(-10800)
             guard let files = try? fm.contentsOfDirectory(atPath: projPath.path) else { continue }
             for file in files where file.hasSuffix(".jsonl") {
                 let filePath = projPath.appendingPathComponent(file)
                 guard let attrs = try? fm.attributesOfItem(atPath: filePath.path) else { continue }
 
-                let sessionId = (file as NSString).deletingPathExtension
                 let mtime = (attrs[.modificationDate] as? Date) ?? Date.distantPast
+                // Skip old files early to avoid parsing metadata
+                guard mtime > recentCutoff else { continue }
+
+                let sessionId = (file as NSString).deletingPathExtension
                 let size = (attrs[.size] as? Int64) ?? 0
 
                 // Parse JSONL for metadata
@@ -283,53 +241,88 @@ class ExternalSessionScanner: ObservableObject {
 
     // MARK: - Classification
 
-    private func classifySessions(_ sessions: [DiscoveredSession], processes: [ClaudeProcess]) -> [DiscoveredSession] {
+    /// Quick classification based on file modification time only (no process lookups)
+    private func classifyByFileAge(_ sessions: [DiscoveredSession]) -> [DiscoveredSession] {
+        var result = sessions
+        let now = Date()
+        for i in result.indices {
+            let ageMinutes = now.timeIntervalSince(result[i].mtime) / 60
+            if ageMinutes < 5 {
+                result[i].status = .live  // Recently active — likely live
+            } else if ageMinutes < 60 {
+                result[i].status = .paused
+            } else {
+                result[i].status = .stopped
+            }
+        }
+        return result
+    }
+
+    /// Get just the PIDs of running claude processes (fast — no lsof)
+    private func getRunningClaudePids() -> Set<Int> {
+        guard let output = runCommand("/bin/ps", arguments: ["-eo", "pid,command"]) else {
+            return []
+        }
+        var pids = Set<Int>()
+        for line in output.split(separator: "\n").dropFirst() {
+            let str = String(line)
+            guard str.contains("claude") && str.contains("--dangerously-skip-permissions") else { continue }
+            let trimmed = str.trimmingCharacters(in: .whitespaces)
+            if let spaceIdx = trimmed.firstIndex(of: " "),
+               let pid = Int(trimmed[trimmed.startIndex..<spaceIdx]) {
+                if !internalPids.contains(pid) {
+                    pids.insert(pid)
+                }
+            }
+        }
+        return pids
+    }
+
+    /// Refine classification using process info (uses lsof sparingly)
+    private func classifyWithProcesses(_ sessions: [DiscoveredSession], pids: Set<Int>) -> [DiscoveredSession] {
         var result = sessions
 
-        // Build map: project_key -> running processes
-        var runningProjects: [String: [ClaudeProcess]] = [:]
-        for proc in processes {
-            if let cwd = proc.cwd {
+        // Sample up to 10 PIDs to avoid slow lsof calls
+        let sampledPids = Array(pids.prefix(10))
+        var runningProjectDirs = Set<String>()
+
+        for pid in sampledPids {
+            if let cwd = getProcessCwd(pid: pid) {
                 let key = cwd.replacingOccurrences(of: "/", with: "-")
-                runningProjects[key, default: []].append(proc)
+                runningProjectDirs.insert(key)
             }
         }
 
-        let now = Date()
-
+        // Mark sessions in running project dirs as live
         for i in result.indices {
-            let projKey = result[i].projectDir
-            let matchingProcs = runningProjects[projKey] ?? []
-
-            if !matchingProcs.isEmpty {
-                let age = now.timeIntervalSince(result[i].mtime) / 60
-                if age < 2 {
-                    result[i].status = .live
-                    result[i].pid = matchingProcs.first?.pid
-                } else {
-                    result[i].status = .stopped
-                }
-            } else {
-                let ageHours = now.timeIntervalSince(result[i].mtime) / 3600
-                if ageHours < 1 {
-                    result[i].status = .paused
-                } else {
-                    result[i].status = .stopped
-                }
+            if runningProjectDirs.contains(result[i].projectDir) {
+                result[i].status = .live
             }
         }
 
-        // Second pass: for projects with running processes, mark most recent session as live
-        for (key, procs) in runningProjects {
-            let projSessions = result.indices.filter { result[$0].projectDir == key }
-            if let mostRecentIdx = projSessions.max(by: { result[$0].mtime < result[$1].mtime }) {
-                if result[mostRecentIdx].status != .live {
-                    result[mostRecentIdx].status = .live
-                    result[mostRecentIdx].pid = procs.first?.pid
-                }
-            }
+        return result
+    }
+
+    /// Sort by status priority, filter to recent, cap at max count
+    private func sortAndFilter(_ sessions: [DiscoveredSession]) -> [DiscoveredSession] {
+        var result = sessions
+
+        let order: [DiscoveredSession.SessionStatus: Int] = [.live: 0, .paused: 1, .stopped: 2]
+        result.sort {
+            let o1 = order[$0.status] ?? 3
+            let o2 = order[$1.status] ?? 3
+            if o1 != o2 { return o1 < o2 }
+            return $0.mtime > $1.mtime
         }
 
+        // Keep live/paused + recent stopped (last 2h), max 20
+        let cutoff = Date().addingTimeInterval(-7200)
+        result = result.filter { session in
+            session.status == .live || session.status == .paused || session.mtime > cutoff
+        }
+        if result.count > 20 {
+            result = Array(result.prefix(20))
+        }
         return result
     }
 
