@@ -120,29 +120,16 @@ struct WorkbenchView: View {
     }
 
     private func startAllAgents() {
-        for agent in store.currentAgents where agent.state == .stopped || agent.state == .idle {
-            let session = sessionManager.session(for: agent, store: store, notificationService: notificationService)
-            if !session.isStarted {
-                session.isStarted = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [session] in
-                    session.controller.startSession()
-                }
-            } else {
-                // Session was started before but agent is stopped/idle — restart
-                sessionManager.destroySession(for: agent.id)
-                let newSession = sessionManager.session(for: agent, store: store, notificationService: notificationService)
-                newSession.isStarted = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [newSession] in
-                    newSession.controller.startSession()
-                }
-            }
+        for agent in store.currentAgents where agent.state == .stopped || agent.state == .idle || agent.state == .error {
+            _ = sessionManager.restartSession(
+                for: agent, store: store, notificationService: notificationService
+            )
         }
     }
 
     private func stopAllAgents() {
         for agent in store.currentAgents where agent.state == .running || agent.state == .paused {
-            let session = sessionManager.session(for: agent, store: store, notificationService: notificationService)
-            session.controller.stopSession()
+            sessionManager.destroySession(for: agent.id)
             store.updateAgentState(agent, to: .stopped)
         }
     }
@@ -225,7 +212,7 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
     let session: TerminalSession
 
     func makeNSView(context: Context) -> NSView {
-        let container = NSView()
+        let container = WorkbenchClippingView()
         embedTerminalView(in: container)
         return container
     }
@@ -240,13 +227,11 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
     private func embedTerminalView(in container: NSView) {
         let tv = getOrCreateTerminalView()
 
-        // Remove stale subviews first
         for sub in container.subviews where sub !== tv {
             sub.removeFromSuperview()
         }
         tv.removeFromSuperview()
 
-        // Use Auto Layout for reliable sizing
         tv.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(tv)
         NSLayoutConstraint.activate([
@@ -256,8 +241,7 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
             tv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
-        // Multi-attempt refresh to handle slow layout
-        for delay in [0.05, 0.2, 0.5, 1.0] {
+        for delay in [0.1, 0.3, 0.6, 1.2] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 container.layoutSubtreeIfNeeded()
                 let terminal = tv.getTerminal()
@@ -274,7 +258,7 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
             return cached
         }
 
-        let tv = TerminalView(frame: NSRect(x: 0, y: 0, width: 400, height: 300))
+        let tv = TerminalView(frame: NSRect(x: 0, y: 0, width: 100, height: 50))
         tv.nativeBackgroundColor = NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
         tv.nativeForegroundColor = .white
         tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
@@ -332,5 +316,15 @@ struct WorkbenchSettingsView: View {
         }
         .padding(16)
         .frame(width: 260)
+    }
+}
+
+/// NSView that clips children — prevents terminal overflow in workbench cells.
+private class WorkbenchClippingView: NSView {
+    override var wantsDefaultClipping: Bool { true }
+    override func layout() {
+        super.layout()
+        wantsLayer = true
+        layer?.masksToBounds = true
     }
 }

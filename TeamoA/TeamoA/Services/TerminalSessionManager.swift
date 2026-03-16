@@ -41,6 +41,30 @@ class TerminalSessionManager: ObservableObject {
         return session
     }
 
+    /// Restart a session — destroy old PTY/view, create fresh session, auto-start.
+    /// Returns the new session. Safe to call even if no session exists yet.
+    func restartSession(
+        for agent: Agent,
+        store: ProjectStore,
+        notificationService: NotificationService
+    ) -> TerminalSession {
+        // Tear down existing session completely
+        if let old = sessions.removeValue(forKey: agent.id) {
+            old.controller.stopSession()
+            old.cachedTerminalView?.removeFromSuperview()
+            old.cachedTerminalView = nil
+        }
+
+        // Create fresh session
+        let newSession = session(for: agent, store: store, notificationService: notificationService)
+        newSession.isStarted = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [newSession] in
+            newSession.controller.startSession()
+        }
+        objectWillChange.send()
+        return newSession
+    }
+
     /// Destroy a session (when agent is deleted).
     func destroySession(for agentId: UUID) {
         if let session = sessions.removeValue(forKey: agentId) {

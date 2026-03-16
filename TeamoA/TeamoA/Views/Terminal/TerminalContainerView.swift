@@ -192,13 +192,12 @@ struct PersistentTerminalView: NSViewRepresentable {
     let session: TerminalSession
 
     func makeNSView(context: Context) -> NSView {
-        let container = NSView()
+        let container = ClippingView()
         embedTerminalView(in: container)
         return container
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        // Re-embed if the terminal view was detached (e.g. after navigation)
         let tv = getOrCreateTerminalView()
         if tv.superview !== nsView {
             embedTerminalView(in: nsView)
@@ -208,13 +207,11 @@ struct PersistentTerminalView: NSViewRepresentable {
     private func embedTerminalView(in container: NSView) {
         let tv = getOrCreateTerminalView()
 
-        // Remove ALL existing subviews first to prevent stale terminals
         for sub in container.subviews where sub !== tv {
             sub.removeFromSuperview()
         }
         tv.removeFromSuperview()
 
-        // Use Auto Layout instead of autoresizingMask for reliable sizing
         tv.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(tv)
         NSLayoutConstraint.activate([
@@ -224,8 +221,7 @@ struct PersistentTerminalView: NSViewRepresentable {
             tv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
-        // Force redraw with multiple retry attempts to handle slow layout
-        for delay in [0.05, 0.2, 0.5, 1.0] {
+        for delay in [0.1, 0.3, 0.6, 1.2] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 container.layoutSubtreeIfNeeded()
                 let terminal = tv.getTerminal()
@@ -242,7 +238,9 @@ struct PersistentTerminalView: NSViewRepresentable {
             return cached
         }
 
-        let tv = TerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
+        // Use small initial frame — Auto Layout will resize to fit container.
+        // Must NOT be .zero (SwiftTerm needs >0 rows/cols for its buffer).
+        let tv = TerminalView(frame: NSRect(x: 0, y: 0, width: 100, height: 50))
         tv.nativeBackgroundColor = NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
         tv.nativeForegroundColor = .white
         tv.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
@@ -263,6 +261,17 @@ struct PersistentTerminalView: NSViewRepresentable {
                 scroller.isHidden = true
             }
         }
+    }
+}
+
+/// NSView that clips its children — prevents terminal content from overflowing.
+private class ClippingView: NSView {
+    override var wantsDefaultClipping: Bool { true }
+    override func layout() {
+        super.layout()
+        // CALayer clipsToBounds equivalent for NSView
+        wantsLayer = true
+        layer?.masksToBounds = true
     }
 }
 

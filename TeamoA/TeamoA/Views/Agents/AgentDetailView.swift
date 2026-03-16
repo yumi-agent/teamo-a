@@ -281,8 +281,9 @@ struct AgentDetailView: View {
     }
 
     private func restartAgent() {
-        sessionManager.destroySession(for: agent.id)
-        store.updateAgentState(agent, to: .idle)
+        _ = sessionManager.restartSession(
+            for: agent, store: store, notificationService: notificationService
+        )
         showTerminal = true
     }
 }
