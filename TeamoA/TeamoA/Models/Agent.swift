@@ -13,9 +13,10 @@ class Agent: ObservableObject, Identifiable, Codable {
     @Published var lastActivityAt: Date
     var goalDescription: String?
     var workingDirectory: String
+    var claudeSessionId: String?  // Maps to Claude Code's JSONL session file
 
     enum CodingKeys: String, CodingKey {
-        case id, projectId, name, role, engine, iconName, state, createdAt, lastActivityAt, goalDescription, workingDirectory
+        case id, projectId, name, role, engine, iconName, state, createdAt, lastActivityAt, goalDescription, workingDirectory, claudeSessionId
     }
 
     init(
@@ -41,6 +42,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         self.lastActivityAt = createdAt
         self.goalDescription = goalDescription
         self.workingDirectory = workingDirectory
+        self.claudeSessionId = nil
     }
 
     required init(from decoder: Decoder) throws {
@@ -56,6 +58,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         lastActivityAt = try c.decode(Date.self, forKey: .lastActivityAt)
         goalDescription = try c.decodeIfPresent(String.self, forKey: .goalDescription)
         workingDirectory = try c.decodeIfPresent(String.self, forKey: .workingDirectory) ?? NSHomeDirectory()
+        claudeSessionId = try c.decodeIfPresent(String.self, forKey: .claudeSessionId)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -71,6 +74,7 @@ class Agent: ObservableObject, Identifiable, Codable {
         try c.encode(lastActivityAt, forKey: .lastActivityAt)
         try c.encodeIfPresent(goalDescription, forKey: .goalDescription)
         try c.encode(workingDirectory, forKey: .workingDirectory)
+        try c.encodeIfPresent(claudeSessionId, forKey: .claudeSessionId)
     }
 }
 

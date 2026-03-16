@@ -38,6 +38,7 @@
 		AB12CD34EF56789012345678 /* WorkbenchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD34EF56AB12789012345678 /* WorkbenchView.swift */; };
 		1A2B3C4D5E6F708192A3B4C5 /* SettingsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F708192A3B4C5D6 /* SettingsDetailView.swift */; };
 		4A5B6C7D8E9F0A1B2C3D4E5F /* ExternalSessionScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B6C7D8E9F0A1B2C3D4E5F6A /* ExternalSessionScanner.swift */; };
+		B2C3D4E5F6A7B8C9D0E1F2A3 /* ClaudeSessionReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* ClaudeSessionReader.swift */; };
 		6C7D8E9F0A1B2C3D4E5F6A7B /* ExternalSessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8E9F0A1B2C3D4E5F6A7B8C /* ExternalSessionDetailView.swift */; };
 		D2D8D95CA703EDF7210D0048 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39DF35C5B235782381DC07AE /* Assets.xcassets */; };
 		C63A26F10DCB4FF127C6ABA0 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 9CE0B8D89C8DCF9B2C9960F7 /* SwiftTerm */; };
@@ -76,6 +77,7 @@
 		2B3C4D5E6F708192A3B4C5D6 /* SettingsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsDetailView.swift"; sourceTree = "<group>"; };
 		7D8E9F0A1B2C3D4E5F6A7B8C /* ExternalSessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExternalSessionDetailView.swift"; sourceTree = "<group>"; };
 		5B6C7D8E9F0A1B2C3D4E5F6A /* ExternalSessionScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExternalSessionScanner.swift"; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* ClaudeSessionReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClaudeSessionReader.swift"; sourceTree = "<group>"; };
 		39DF35C5B235782381DC07AE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
 		90F19FB24A3D4E0CECCBB391 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
 		447BA75BCCBEC31888890E33 /* TeamoA.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "TeamoA.entitlements"; sourceTree = "<group>"; };
@@ -146,7 +148,8 @@
 				D53B6A8CBB66BA3D0D75235A /* AgentStateDetector.swift */,
 				0BA598DF8F6BB0151C846605 /* NotificationService.swift */,
 				9A4D0D7B44B8F583CA93DB94 /* ProjectStore.swift */,
-				5B6C7D8E9F0A1B2C3D4E5F6A /* ExternalSessionScanner.swift */
+				5B6C7D8E9F0A1B2C3D4E5F6A /* ExternalSessionScanner.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* ClaudeSessionReader.swift */
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -350,6 +353,7 @@
 				AB12CD34EF56789012345678 /* WorkbenchView.swift in Sources */,
 				1A2B3C4D5E6F708192A3B4C5 /* SettingsDetailView.swift in Sources */,
 				4A5B6C7D8E9F0A1B2C3D4E5F /* ExternalSessionScanner.swift in Sources */,
+				B2C3D4E5F6A7B8C9D0E1F2A3 /* ClaudeSessionReader.swift in Sources */,
 				6C7D8E9F0A1B2C3D4E5F6A7B /* ExternalSessionDetailView.swift in Sources */
 			);
 			runOnlyForDeploymentPostprocessing = 0;

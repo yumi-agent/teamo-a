@@ -244,10 +244,14 @@ struct CreateAgentView: View {
                     .foregroundColor(.secondary)
             }
 
-            Form {
+            VStack(alignment: .leading, spacing: 16) {
                 // Name
-                TextField("Agent Name", text: $name)
-                    .textFieldStyle(.roundedBorder)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Agent Name")
+                        .font(.system(size: 13, weight: .medium))
+                    TextField("Agent Name", text: $name)
+                        .textFieldStyle(.roundedBorder)
+                }
 
                 // Role (optional)
                 VStack(alignment: .leading, spacing: 4) {
@@ -263,11 +267,16 @@ struct CreateAgentView: View {
                 }
 
                 // Engine — only Claude Code and Codex
-                Picker("Engine", selection: $engine) {
-                    Text("Claude Code").tag(AgentEngine.claudeCode)
-                    Text("Codex").tag(AgentEngine.codex)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Engine")
+                        .font(.system(size: 13, weight: .medium))
+                    Picker("Engine", selection: $engine) {
+                        Text("Claude Code").tag(AgentEngine.claudeCode)
+                        Text("Codex").tag(AgentEngine.codex)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
                 }
-                .pickerStyle(.segmented)
 
                 // Working Directory
                 VStack(alignment: .leading, spacing: 4) {
@@ -318,7 +327,7 @@ struct CreateAgentView: View {
                         }
                 }
             }
-            .formStyle(.grouped)
+            .padding(.horizontal, 20)
 
             // Actions
             HStack {

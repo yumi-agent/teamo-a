@@ -48,7 +48,10 @@ struct TerminalContainerView: View {
         .onAppear {
             if !session.isStarted {
                 session.isStarted = true
-                session.controller.startSession()
+                // Delay start to ensure TerminalView has completed layout
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [session] in
+                    session.controller.startSession()
+                }
             }
         }
     }
@@ -221,13 +224,15 @@ struct PersistentTerminalView: NSViewRepresentable {
             tv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
-        // Force redraw after layout settles
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            container.layoutSubtreeIfNeeded()
-            if container.bounds.width > 0 && container.bounds.height > 0 {
+        // Force redraw with multiple retry attempts to handle slow layout
+        for delay in [0.05, 0.2, 0.5, 1.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                container.layoutSubtreeIfNeeded()
                 let terminal = tv.getTerminal()
-                terminal.refresh(startRow: 0, endRow: max(0, terminal.rows - 1))
-                tv.needsDisplay = true
+                if terminal.rows > 0 {
+                    terminal.refresh(startRow: 0, endRow: terminal.rows - 1)
+                    tv.needsDisplay = true
+                }
             }
         }
     }
@@ -237,7 +242,7 @@ struct PersistentTerminalView: NSViewRepresentable {
             return cached
         }
 
-        let tv = TerminalView(frame: .zero)
+        let tv = TerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 400))
         tv.nativeBackgroundColor = NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
         tv.nativeForegroundColor = .white
         tv.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
@@ -278,6 +283,7 @@ class TerminalController: NSObject, ObservableObject {
 
     private var engineLaunchedAt: Date?
     private var initialGoalSent = false
+    private var sessionIdCaptured = false
 
     override init() {
         super.init()
@@ -339,6 +345,32 @@ class TerminalController: NSObject, ObservableObject {
         initialGoalSent = true
         ptyManager.write(goal + "\r")
     }
+
+    /// Try to capture Claude session ID from output and persist it on the agent.
+    /// Also auto-associate with most recent JSONL if not yet captured.
+    private func captureSessionId(from text: String) {
+        guard !sessionIdCaptured, let agent = agent else { return }
+
+        // Try regex extraction first
+        if let sid = ClaudeSessionReader.extractSessionId(from: text) {
+            agent.claudeSessionId = sid
+            sessionIdCaptured = true
+            store?.objectWillChange.send()
+            return
+        }
+
+        // Fallback: after engine has been running 5s, grab most recent JSONL
+        if let launched = engineLaunchedAt,
+           Date().timeIntervalSince(launched) > 5.0,
+           agent.claudeSessionId == nil {
+            if let recent = ClaudeSessionReader.mostRecentSession(forDirectory: agent.workingDirectory) {
+                agent.claudeSessionId = recent.id
+                sessionIdCaptured = true
+                store?.objectWillChange.send()
+                ClaudeSessionReader.invalidateCache(forDirectory: agent.workingDirectory)
+            }
+        }
+    }
 }
 
 // MARK: - TerminalViewDelegate
@@ -354,6 +386,12 @@ extension TerminalController: TerminalViewDelegate {
 
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
         ptyManager.resize(cols: newCols, rows: newRows)
+        // Force refresh after resize to display buffered content
+        let terminal = source.getTerminal()
+        if newRows > 0 {
+            terminal.refresh(startRow: 0, endRow: newRows - 1)
+            source.needsDisplay = true
+        }
     }
 
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
@@ -390,6 +428,7 @@ extension TerminalController: PTYManagerDelegate {
         if let text = String(data: data, encoding: .utf8) {
             stateDetector.feedOutput(text)
             appendToOutputBuffer(text)
+            captureSessionId(from: text)
         }
     }
 
