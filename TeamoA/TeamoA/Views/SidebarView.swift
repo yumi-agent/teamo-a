@@ -218,11 +218,14 @@ struct AgentSidebarRow: View {
 struct CreateAgentView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var store: ProjectStore
+    @AppStorage("default_engine") private var defaultEngine: String = AgentEngine.claudeCode.rawValue
+    @AppStorage("default_working_directory") private var defaultWorkingDir: String = NSHomeDirectory()
     @State private var name = ""
     @State private var role = ""
     @State private var engine: AgentEngine = .claudeCode
     @State private var goalDescription = ""
-    @State private var workingDirectory = NSHomeDirectory()
+    @State private var workingDirectory = ""
+    @State private var didApplyDefaults = false
 
     var onCreated: ((UUID) -> Void)?
 
@@ -347,6 +350,13 @@ struct CreateAgentView: View {
         }
         .padding(20)
         .frame(width: 500, height: 540)
+        .onAppear {
+            if !didApplyDefaults {
+                didApplyDefaults = true
+                engine = AgentEngine(rawValue: defaultEngine) ?? .claudeCode
+                workingDirectory = defaultWorkingDir
+            }
+        }
     }
 
     private func chooseDirectory() {
@@ -377,12 +387,14 @@ struct CreateAgentView: View {
             workingDirectory: workingDirectory
         )
 
-        // Find the created agent to navigate to it
-        if let created = store.currentAgents.last(where: { $0.name == trimmedName }) {
-            onCreated?(created.id)
-        }
-
+        // Dismiss first, then navigate after sheet animation completes
+        let createdId = store.currentAgents.last(where: { $0.name == trimmedName })?.id
         dismiss()
+        if let agentId = createdId {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [onCreated] in
+                onCreated?(agentId)
+            }
+        }
     }
 }
 

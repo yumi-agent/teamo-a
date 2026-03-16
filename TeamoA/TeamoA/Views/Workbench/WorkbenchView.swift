@@ -20,8 +20,8 @@ struct WorkbenchView: View {
                 Spacer()
 
                 let agents = store.currentAgents
-                let hasRunning = agents.contains { $0.state == .running }
-                let hasStopped = agents.contains { $0.state == .stopped || $0.state == .idle }
+                let hasRunning = agents.contains { $0.state == .running || $0.state == .paused }
+                let hasStopped = agents.contains { $0.state == .stopped || $0.state == .idle || $0.state == .error }
 
                 if !agents.isEmpty {
                     if hasStopped {
@@ -124,15 +124,26 @@ struct WorkbenchView: View {
             let session = sessionManager.session(for: agent, store: store, notificationService: notificationService)
             if !session.isStarted {
                 session.isStarted = true
-                session.controller.startSession()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [session] in
+                    session.controller.startSession()
+                }
+            } else {
+                // Session was started before but agent is stopped/idle — restart
+                sessionManager.destroySession(for: agent.id)
+                let newSession = sessionManager.session(for: agent, store: store, notificationService: notificationService)
+                newSession.isStarted = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [newSession] in
+                    newSession.controller.startSession()
+                }
             }
         }
     }
 
     private func stopAllAgents() {
-        for agent in store.currentAgents where agent.state == .running {
+        for agent in store.currentAgents where agent.state == .running || agent.state == .paused {
             let session = sessionManager.session(for: agent, store: store, notificationService: notificationService)
             session.controller.stopSession()
+            store.updateAgentState(agent, to: .stopped)
         }
     }
 
