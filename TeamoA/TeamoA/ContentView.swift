@@ -34,6 +34,8 @@ struct MainView: View {
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
         } detail: {
             detailView
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .windowBackgroundColor))
         }
         .onReceive(NotificationCenter.default.publisher(for: .navigateToAgent)) { notification in
             if let id = notification.userInfo?["agentId"] as? UUID {

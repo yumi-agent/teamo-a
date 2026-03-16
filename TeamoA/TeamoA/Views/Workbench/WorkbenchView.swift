@@ -198,7 +198,9 @@ struct WorkbenchTerminalCell: View {
         .onAppear {
             if !session.isStarted {
                 session.isStarted = true
-                session.controller.startSession()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [session] in
+                    session.controller.startSession()
+                }
             }
         }
     }
@@ -243,12 +245,15 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
             tv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            container.layoutSubtreeIfNeeded()
-            if container.bounds.width > 0 && container.bounds.height > 0 {
+        // Multi-attempt refresh to handle slow layout
+        for delay in [0.05, 0.2, 0.5, 1.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                container.layoutSubtreeIfNeeded()
                 let terminal = tv.getTerminal()
-                terminal.refresh(startRow: 0, endRow: max(0, terminal.rows - 1))
-                tv.needsDisplay = true
+                if terminal.rows > 0 {
+                    terminal.refresh(startRow: 0, endRow: terminal.rows - 1)
+                    tv.needsDisplay = true
+                }
             }
         }
     }
@@ -258,7 +263,7 @@ struct WorkbenchTerminalRepresentable: NSViewRepresentable {
             return cached
         }
 
-        let tv = TerminalView(frame: .zero)
+        let tv = TerminalView(frame: NSRect(x: 0, y: 0, width: 400, height: 300))
         tv.nativeBackgroundColor = NSColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
         tv.nativeForegroundColor = .white
         tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
